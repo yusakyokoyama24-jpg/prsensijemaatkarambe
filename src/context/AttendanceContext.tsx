@@ -131,14 +131,15 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_users`);
     if (saved) {
       const parsed: UserProfile[] = JSON.parse(saved);
-      const hasYusak = parsed.some((u) => u.name?.includes('Yusak') || u.id === 'usr-admin-yusak');
-      const hasPMG = parsed.some((u) => u.department?.includes('PMG'));
-      const hasKbid = parsed.some((u) => u.department?.includes('Ketua Bidang'));
+      const filtered = parsed.filter((u) => !['usr-emp-1', 'usr-emp-2', 'usr-emp-3', 'usr-emp-4', 'usr-emp-5'].includes(u.id));
+      const hasYusak = filtered.some((u) => u.name?.includes('Yusak') || u.id === 'usr-admin-yusak');
+      const hasPMG = filtered.some((u) => u.department?.includes('PMG'));
+      const hasKbid = filtered.some((u) => u.department?.includes('Ketua Bidang'));
       if (!hasYusak || !hasPMG || !hasKbid) {
-        const missing = INITIAL_USERS.filter((init) => !parsed.some((p) => p.id === init.id));
-        return [...parsed, ...missing];
+        const missing = INITIAL_USERS.filter((init) => !filtered.some((p) => p.id === init.id));
+        return [...filtered, ...missing];
       }
-      return parsed;
+      return filtered;
     }
     return INITIAL_USERS;
   });
