@@ -124,6 +124,20 @@ export const INITIAL_SCHEDULE: AttendanceSchedule = {
 
 export const INITIAL_USERS: UserProfile[] = [
   {
+    id: 'usr-admin-yusak',
+    nip: 'PGR-2021-099',
+    name: 'Yusak Yokoyama',
+    email: 'yusakyokoyama24@guru.smk.belajar.id',
+    role: 'SUPER_ADMIN',
+    department: 'Badan Pekerja Majelis Jemaat & Administrator Utama',
+    position: 'Super Administrator Sistem',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    phone: '0812-4211-9889',
+    assignedLocationIds: ['loc-1', 'loc-2', 'loc-3'],
+    isActive: true,
+    joinedAt: '2021-01-01',
+  },
+  {
     id: 'usr-admin-1',
     nip: 'PGR-2021-001',
     name: 'Pdt. Markus Sampe, M.Th',

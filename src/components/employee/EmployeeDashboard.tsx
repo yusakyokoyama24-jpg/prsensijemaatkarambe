@@ -195,54 +195,59 @@ export const EmployeeDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Navigation Tabs (Dashboard Presensi vs Riwayat) */}
-      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+      {/* Navigation Tabs with Varied, Artistic & Luxurious Gradients */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveTab('HOME')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${
               activeTab === 'HOME'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                : 'text-slate-400 hover:text-white bg-slate-900'
+                ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 shadow-lg shadow-amber-500/30 border border-amber-200/50 scale-105'
+                : 'bg-slate-900/80 text-slate-300 border border-slate-800 hover:bg-slate-900 hover:text-white'
             }`}
           >
-            Presensi Hari Ini
+            <Calendar className="w-4 h-4" />
+            <span>Presensi Hari Ini</span>
           </button>
           <button
             onClick={() => setActiveTab('HISTORY')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${
               activeTab === 'HISTORY'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                : 'text-slate-400 hover:text-white bg-slate-900'
+                ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-lg shadow-emerald-900/40 border border-emerald-400/50 scale-105'
+                : 'bg-slate-900/80 text-slate-300 border border-slate-800 hover:bg-slate-900 hover:text-white'
             }`}
           >
-            Riwayat & Pengajuan
+            <FileText className="w-4 h-4" />
+            <span>Riwayat & Pengajuan</span>
           </button>
         </div>
 
-        {/* Quick action for Overtime / Leave / Correction */}
+        {/* Quick action navigation buttons with varied artistic luxurious gradients */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowOvertimeModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-950/40 border border-amber-800/60 hover:border-amber-700 text-amber-300 hover:text-white text-xs font-medium transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-900/80 to-violet-900/80 border border-purple-700/60 hover:border-purple-500 text-purple-200 hover:text-white text-xs font-bold shadow-md shadow-purple-950/40 transition cursor-pointer"
+            title="Ajukan Lembur Kerja"
           >
-            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <Clock className="w-4 h-4 text-purple-400" />
             <span className="hidden sm:inline">Ajukan</span> Lembur
           </button>
 
           <button
             onClick={() => setShowLeaveModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-medium transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-900/80 to-red-900/80 border border-rose-700/60 hover:border-rose-500 text-rose-200 hover:text-white text-xs font-bold shadow-md shadow-rose-950/40 transition cursor-pointer"
+            title="Ajukan Izin atau Cuti"
           >
-            <FileText className="w-3.5 h-3.5 text-amber-400" />
+            <FileText className="w-4 h-4 text-rose-400" />
             <span className="hidden sm:inline">Ajukan</span> Izin/Cuti
           </button>
 
           <button
             onClick={() => setShowCorrectionModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-medium transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-900/80 to-sky-900/80 border border-cyan-700/60 hover:border-cyan-500 text-cyan-200 hover:text-white text-xs font-bold shadow-md shadow-cyan-950/40 transition cursor-pointer"
+            title="Koreksi Catatan Presensi"
           >
-            <Edit3 className="w-3.5 h-3.5 text-sky-400" />
+            <Edit3 className="w-4 h-4 text-cyan-400" />
             <span className="hidden sm:inline">Koreksi Presensi</span>
           </button>
         </div>

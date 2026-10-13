@@ -10,18 +10,30 @@ const MainLayout: React.FC = () => {
   const { activePortal, setActivePortal, currentUser, login, users, settings } = useAttendance();
   const [showDemoSelector, setShowDemoSelector] = useState(false);
 
+  const isAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'CHURCH_ADMIN' || currentUser?.role === 'UNIT_HEAD';
+
   // Sync URL hash / pathname on load (e.g. /admin vs /pegawai)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname.toLowerCase();
       const search = window.location.search.toLowerCase();
       if (path.includes('admin') || search.includes('portal=admin')) {
-        setActivePortal('ADMIN');
+        if (isAdmin) {
+          setActivePortal('ADMIN');
+        } else {
+          setActivePortal('EMPLOYEE');
+        }
       } else if (path.includes('pegawai') || search.includes('portal=employee')) {
         setActivePortal('EMPLOYEE');
       }
     }
-  }, [setActivePortal]);
+  }, [setActivePortal, isAdmin]);
+
+  useEffect(() => {
+    if (activePortal === 'ADMIN' && !isAdmin) {
+      setActivePortal('EMPLOYEE');
+    }
+  }, [activePortal, isAdmin, setActivePortal]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-slate-100 flex flex-col">

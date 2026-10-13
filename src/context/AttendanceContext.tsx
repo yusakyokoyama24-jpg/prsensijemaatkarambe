@@ -131,9 +131,10 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_users`);
     if (saved) {
       const parsed: UserProfile[] = JSON.parse(saved);
+      const hasYusak = parsed.some((u) => u.name?.includes('Yusak') || u.id === 'usr-admin-yusak');
       const hasPMG = parsed.some((u) => u.department?.includes('PMG'));
       const hasKbid = parsed.some((u) => u.department?.includes('Ketua Bidang'));
-      if (!hasPMG || !hasKbid) {
+      if (!hasYusak || !hasPMG || !hasKbid) {
         const missing = INITIAL_USERS.filter((init) => !parsed.some((p) => p.id === init.id));
         return [...parsed, ...missing];
       }
@@ -235,13 +236,13 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
     return initial;
   });
 
-  // Current logged in user (default to employee Yohanes Banne for fast testing)
+  // Current logged in user (default to Yusak Yokoyama as admin)
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    return users.find((u) => u.id === 'usr-emp-1') || users[0] || null;
+    return users.find((u) => u.id === 'usr-admin-yusak' || u.name?.includes('Yusak')) || users.find((u) => u.role === 'SUPER_ADMIN') || users[0] || null;
   });
 
-  // Active portal view ('EMPLOYEE' or 'ADMIN')
-  const [activePortal, setActivePortal] = useState<'EMPLOYEE' | 'ADMIN'>('EMPLOYEE');
+  // Active portal view ('EMPLOYEE' or 'ADMIN') - default to ADMIN for Yusak Yokoyama
+  const [activePortal, setActivePortal] = useState<'EMPLOYEE' | 'ADMIN'>('ADMIN');
 
   // Sync to local storage
   useEffect(() => {

@@ -75,55 +75,55 @@ export const LiveAttendanceMonitor: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* KPI Stat Cards */}
+      {/* KPI Stat Cards with Varied Background Colors (Biru Tua, Hijau Tua, Orange Tua, Kuning Tua, Ungu Tua) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        {/* Total Pegawai */}
-        <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800">
-          <p className="text-[11px] text-slate-400 font-medium truncate">Total Pegawai</p>
+        {/* Total Pegawai - Biru Tua */}
+        <div className="p-3.5 rounded-2xl bg-blue-950/80 border border-blue-800/80 shadow-lg">
+          <p className="text-[11px] text-blue-300 font-medium truncate">Total Pegawai</p>
           <p className="text-xl font-bold text-white mt-1">{totalEmployees}</p>
-          <span className="text-[10px] text-slate-500">Pegawai Aktif</span>
+          <span className="text-[10px] text-blue-400/80">Pegawai Aktif</span>
         </div>
 
-        {/* Hadir Pagi */}
-        <div className="p-3.5 rounded-2xl bg-slate-900 border border-emerald-900/50">
-          <p className="text-[11px] text-emerald-400 font-medium truncate">Presensi Pagi</p>
-          <p className="text-xl font-bold text-emerald-400 mt-1">{morningPresensiCount}</p>
-          <span className="text-[10px] text-slate-500">Sesi Masuk</span>
+        {/* Hadir Pagi - Hijau Tua */}
+        <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-800/80 shadow-lg">
+          <p className="text-[11px] text-emerald-300 font-medium truncate">Presensi Pagi</p>
+          <p className="text-xl font-bold text-emerald-300 mt-1">{morningPresensiCount}</p>
+          <span className="text-[10px] text-emerald-400/80">Sesi Masuk</span>
         </div>
 
-        {/* Hadir Sore */}
-        <div className="p-3.5 rounded-2xl bg-slate-900 border border-emerald-900/50">
-          <p className="text-[11px] text-emerald-400 font-medium truncate">Presensi Sore</p>
-          <p className="text-xl font-bold text-emerald-400 mt-1">{afternoonPresensiCount}</p>
-          <span className="text-[10px] text-slate-500">Selesai Tugas</span>
+        {/* Hadir Sore - Hijau Tua */}
+        <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-800/80 shadow-lg">
+          <p className="text-[11px] text-emerald-300 font-medium truncate">Presensi Sore</p>
+          <p className="text-xl font-bold text-emerald-300 mt-1">{afternoonPresensiCount}</p>
+          <span className="text-[10px] text-emerald-400/80">Selesai Tugas</span>
         </div>
 
-        {/* Terlambat */}
-        <div className="p-3.5 rounded-2xl bg-slate-900 border border-amber-900/50">
-          <p className="text-[11px] text-amber-400 font-medium truncate">Terlambat</p>
-          <p className="text-xl font-bold text-amber-400 mt-1">{lateCount}</p>
-          <span className="text-[10px] text-slate-500">&gt; Batas Toleransi</span>
+        {/* Terlambat - Kuning Tua */}
+        <div className="p-3.5 rounded-2xl bg-yellow-950/80 border border-yellow-800/80 shadow-lg">
+          <p className="text-[11px] text-yellow-300 font-medium truncate">Terlambat</p>
+          <p className="text-xl font-bold text-yellow-300 mt-1">{lateCount}</p>
+          <span className="text-[10px] text-yellow-400/80">&gt; Batas Toleransi</span>
         </div>
 
-        {/* Di Luar Area */}
-        <div className="p-3.5 rounded-2xl bg-slate-900 border border-rose-900/50">
-          <p className="text-[11px] text-rose-400 font-medium truncate">Di Luar Area</p>
-          <p className="text-xl font-bold text-rose-400 mt-1">{outsideCount + pendingCount}</p>
-          <span className="text-[10px] text-slate-500">&gt; Radius Gereja</span>
+        {/* Di Luar Area - Orange Tua */}
+        <div className="p-3.5 rounded-2xl bg-orange-950/80 border border-orange-800/80 shadow-lg">
+          <p className="text-[11px] text-orange-300 font-medium truncate">Di Luar Area</p>
+          <p className="text-xl font-bold text-orange-300 mt-1">{outsideCount + pendingCount}</p>
+          <span className="text-[10px] text-orange-400/80">&gt; Radius Gereja</span>
         </div>
 
-        {/* Izin / Cuti */}
-        <div className="p-3.5 rounded-2xl bg-slate-900 border border-sky-900/50">
-          <p className="text-[11px] text-sky-400 font-medium truncate">Izin / Cuti</p>
-          <p className="text-xl font-bold text-sky-400 mt-1">{leaveCount}</p>
-          <span className="text-[10px] text-slate-500">Disetujui</span>
+        {/* Izin / Cuti - Ungu Tua */}
+        <div className="p-3.5 rounded-2xl bg-purple-950/80 border border-purple-800/80 shadow-lg">
+          <p className="text-[11px] text-purple-300 font-medium truncate">Izin / Cuti</p>
+          <p className="text-xl font-bold text-purple-300 mt-1">{leaveCount}</p>
+          <span className="text-[10px] text-purple-400/80">Disetujui</span>
         </div>
 
-        {/* Tingkat Kehadiran */}
-        <div className="p-3.5 rounded-2xl bg-slate-900 border border-amber-500/30 bg-gradient-to-br from-slate-900 to-amber-950/20">
-          <p className="text-[11px] text-amber-400 font-medium truncate">Kehadiran Pagi</p>
-          <p className="text-xl font-black text-amber-400 mt-1">{attendancePercent}%</p>
-          <span className="text-[10px] text-slate-400">Persentase</span>
+        {/* Tingkat Kehadiran - Ungu Tua */}
+        <div className="p-3.5 rounded-2xl bg-purple-950/80 border border-purple-800/80 shadow-lg">
+          <p className="text-[11px] text-purple-300 font-medium truncate">Kehadiran Pagi</p>
+          <p className="text-xl font-black text-purple-300 mt-1">{attendancePercent}%</p>
+          <span className="text-[10px] text-purple-400/80">Persentase</span>
         </div>
       </div>
 

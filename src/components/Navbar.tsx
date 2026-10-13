@@ -41,7 +41,7 @@ export const Navbar: React.FC<{ onOpenDemoModal?: () => void }> = ({ onOpenDemoM
     return () => clearInterval(timer);
   }, [schedule.timezone, schedule.timezoneLabel]);
 
-  const isAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'CHURCH_ADMIN';
+  const isAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'CHURCH_ADMIN' || currentUser?.role === 'UNIT_HEAD';
 
   return (
     <>
@@ -106,29 +106,35 @@ export const Navbar: React.FC<{ onOpenDemoModal?: () => void }> = ({ onOpenDemoM
               <span>{timeStr || 'Memuat jam...'}</span>
             </div>
 
-            {/* Portal Switcher Buttons */}
-            <div className="flex items-center p-1 rounded-xl bg-slate-900/90 border border-amber-500/30 shadow-inner">
+            {/* Portal Switcher Buttons with Luxurious Artistic Gradients */}
+            <div className="flex items-center p-1.5 rounded-2xl bg-slate-950/90 border border-amber-500/40 shadow-2xl">
               <button
                 onClick={() => setActivePortal('EMPLOYEE')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
                   activePortal === 'EMPLOYEE'
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                    ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 shadow-lg shadow-amber-500/40 border border-amber-200/50 scale-105'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-900'
                 }`}
               >
-                <User className="w-3.5 h-3.5" />
+                <User className="w-4 h-4" />
                 <span>Portal Pegawai</span>
               </button>
 
               <button
-                onClick={() => setActivePortal('ADMIN')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                onClick={() => {
+                  if (!isAdmin) {
+                    alert('Akses Ditolak: Portal Admin hanya dapat diakses oleh Administrator (Yusak Yokoyama, Pdt. Markus, atau Pengurus Majelis).');
+                    return;
+                  }
+                  setActivePortal('ADMIN');
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
                   activePortal === 'ADMIN'
-                    ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-600/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                    ? 'bg-gradient-to-r from-red-600 via-rose-600 to-purple-700 text-white shadow-lg shadow-red-900/50 border border-rose-400/50 scale-105'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-900'
                 }`}
               >
-                <Shield className="w-3.5 h-3.5" />
+                <Shield className="w-4 h-4" />
                 <span>Portal Admin</span>
               </button>
             </div>
