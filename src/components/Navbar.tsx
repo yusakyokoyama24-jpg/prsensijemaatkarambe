@@ -54,24 +54,30 @@ export const Navbar: React.FC<{ onOpenDemoModal?: () => void }> = ({ onOpenDemoM
             <div className="flex items-center gap-3">
               <div
                 onClick={() => setShowLogoModal(true)}
-                className="group relative w-11 h-11 rounded-2xl bg-slate-900 border border-amber-500/40 p-1 flex items-center justify-center shadow-md shadow-amber-500/10 shrink-0 cursor-pointer hover:border-amber-400 hover:scale-105 transition"
-                title="Klik untuk mengganti logo Gereja Toraja Jemaat Karambo"
+                className="group relative w-12 h-12 rounded-full bg-gradient-to-tr from-slate-950 via-slate-900 to-amber-950 border-2 border-amber-400 p-1 flex items-center justify-center shadow-xl shadow-amber-950/50 shrink-0 cursor-pointer hover:border-amber-300 hover:scale-110 transition-all duration-300 ring-4 ring-amber-500/20"
+                style={{
+                  boxShadow: '0 10px 25px -5px rgba(245, 158, 11, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -3px 6px rgba(0, 0, 0, 0.8)'
+                }}
+                title="Klik untuk mengganti logo Gereja Toraja Jemaat Karambe"
               >
                 {settings.logoUrl ? (
                   <img
                     src={settings.logoUrl}
                     alt={settings.churchName}
-                    className="w-full h-full object-contain rounded-xl"
+                    className="w-full h-full object-cover rounded-full shadow-inner"
                   />
                 ) : (
-                  <div className="w-full h-full rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center">
-                    <span className="text-xl font-black text-slate-950">✝</span>
+                  <div className="w-full h-full rounded-full bg-gradient-to-br from-amber-400 via-amber-600 to-yellow-700 flex items-center justify-center shadow-inner">
+                    <span className="text-xl font-black text-slate-950 drop-shadow">✝</span>
                   </div>
                 )}
 
-                {/* Subtle camera/edit badge */}
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-500 border border-slate-900 flex items-center justify-center text-slate-950 shadow-md">
-                  <Camera className="w-2.5 h-2.5 stroke-[2.5]" />
+                {/* Subtle 3D glossy light highlight overlay */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-white/10 to-white/30 pointer-events-none" />
+
+                {/* Camera/edit badge */}
+                <div className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full bg-amber-400 border-2 border-slate-950 flex items-center justify-center text-slate-950 shadow-md">
+                  <Camera className="w-2.5 h-2.5 stroke-[3]" />
                 </div>
               </div>
 
@@ -183,7 +189,6 @@ export const Navbar: React.FC<{ onOpenDemoModal?: () => void }> = ({ onOpenDemoM
                     <div className="px-3 py-2 border-b border-slate-800/80 mb-1">
                       <p className="text-xs font-bold text-white">{currentUser.name}</p>
                       <p className="text-[11px] text-slate-400">{currentUser.department}</p>
-                      <p className="text-[10px] text-amber-400 font-mono mt-0.5">NIP: {currentUser.nip}</p>
                     </div>
 
                     {/* Switch portal inside dropdown for mobile */}

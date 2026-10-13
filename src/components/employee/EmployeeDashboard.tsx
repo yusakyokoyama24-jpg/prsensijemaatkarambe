@@ -176,11 +176,8 @@ export const EmployeeDashboard: React.FC = () => {
                   Ubah Foto
                 </button>
               </div>
-              <p className="text-[11px] font-mono text-slate-400">
-                NIP: <span className="text-amber-400 font-semibold">{currentUser.nip}</span>
-              </p>
+              </div>
             </div>
-          </div>
 
           {/* Today's date pill */}
           <div className="bg-slate-950/80 rounded-2xl p-4 text-left sm:text-right shrink-0 shadow-lg">

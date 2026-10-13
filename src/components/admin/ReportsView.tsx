@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAttendance } from '../../context/AttendanceContext';
-import { exportAttendanceToExcel, exportMonthlySalaryRecapToExcel } from '../../utils/export';
+import { exportAttendanceToExcel, exportAttendanceToCSV } from '../../utils/export';
 import { getCurrentDateStr } from '../../utils/time';
 import { AttendanceRecord } from '../../types';
 import {
@@ -55,13 +55,14 @@ export const ReportsView: React.FC = () => {
     );
   };
 
-  const handleExportSalaryRecap = () => {
-    exportMonthlySalaryRecapToExcel(
+  const handleExportCSV = () => {
+    exportAttendanceToCSV(
       filteredRecords,
-      users,
       `Periode: ${startDate} s/d ${endDate}`
     );
   };
+
+
 
   const handlePrint = () => {
     window.print();
@@ -128,14 +129,6 @@ export const ReportsView: React.FC = () => {
             </button>
           )}
 
-          <button
-            onClick={handleExportSalaryRecap}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition cursor-pointer shadow-md"
-            title="Ekspor rekapitulasi kehadiran dan estimasi tunjangan/gaji pegawai"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Rekap Gaji Bulanan (.xlsx)</span>
-          </button>
 
           <button
             onClick={handleExportExcel}
@@ -146,11 +139,21 @@ export const ReportsView: React.FC = () => {
           </button>
 
           <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs transition cursor-pointer shadow-md"
+            title="Ekspor laporan presensi ke format CSV"
+          >
+            <Download className="w-4 h-4" />
+            <span>Ekspor CSV (.csv)</span>
+          </button>
+
+          <button
             onClick={handlePrint}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition cursor-pointer border border-slate-700"
+            title="Cetak laporan / simpan sebagai PDF menggunakan kemampuan browser"
           >
             <Printer className="w-4 h-4" />
-            <span>Cetak Dokumen</span>
+            <span>Cetak PDF / Dokumen</span>
           </button>
         </div>
       </div>

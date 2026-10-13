@@ -540,6 +540,30 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
             <div className="space-y-4">
               {/* Camera Container */}
               <div className="relative aspect-square w-full max-w-[340px] mx-auto rounded-2xl overflow-hidden bg-slate-950 border-2 border-amber-500/40 shadow-inner flex items-center justify-center">
+                {/* Processing / Submitting Scanning Animation Overlay */}
+                {submitting && (
+                  <div className="absolute inset-0 z-20 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center">
+                    <div className="relative w-36 h-36 rounded-2xl border-2 border-amber-400/80 bg-slate-900/50 overflow-hidden flex items-center justify-center mb-3 shadow-[0_0_30px_rgba(245,158,11,0.3)]">
+                      {/* Laser Scanner Line */}
+                      <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_15px_#f59e0b] animate-scan z-10" />
+                      {/* Grid background effect */}
+                      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:16px_16px] opacity-40" />
+                      <div className="relative z-20 flex flex-col items-center">
+                        <Sparkles className="w-8 h-8 text-amber-400 animate-spin mb-1" />
+                        <span className="text-[10px] font-mono font-bold text-amber-300 uppercase tracking-widest">
+                          AI BIOMETRIC
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-xs font-bold text-white tracking-wide animate-pulse">
+                      Memindai & Memverifikasi Selfie...
+                    </p>
+                    <p className="text-[11px] text-amber-300/90 mt-0.5">
+                      Mencocokkan enkripsi wajah & koordinat GPS
+                    </p>
+                  </div>
+                )}
+
                 {photoBase64 ? (
                   /* Captured Photo Preview */
                   <div className="relative w-full h-full">

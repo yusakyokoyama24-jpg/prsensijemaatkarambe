@@ -82,105 +82,33 @@ export function exportAttendanceToExcel(
   XLSX.writeFile(workbook, fileName);
 }
 
-export function exportMonthlySalaryRecapToExcel(
+
+export function exportAttendanceToCSV(
   records: AttendanceRecord[],
-  employees: UserProfile[],
-  monthTitle: string = 'Bulan Berjalan'
+  filterTitle: string = 'Semua Periode'
 ) {
-  const employeeMap = new Map<string, {
-    nip: string;
-    name: string;
-    department: string;
-    position: string;
-    onTime: number;
-    late: number;
-    outside: number;
-    totalLatenessMinutes: number;
-    totalPresent: number;
-  }>();
+  const headers = ['Tanggal', 'Sesi', 'NIP', 'Nama Pegawai', 'Unit Kerja', 'Jam Presensi', 'Status', 'Jarak (m)', 'Titik Lokasi'];
+  const rows = records.map(r => [
+    r.workDate,
+    r.sessionType === 'MORNING' ? 'Pagi' : 'Sore',
+    `"${r.employeeNip}"`,
+    `"${r.employeeName}"`,
+    `"${r.department}"`,
+    r.localTimeStr,
+    r.status,
+    Math.round(r.distanceMeters),
+    `"${r.locationName}"`
+  ]);
 
-  employees.forEach(emp => {
-    employeeMap.set(emp.id, {
-      nip: emp.nip,
-      name: emp.name,
-      department: emp.department,
-      position: emp.position || 'Pegawai',
-      onTime: 0,
-      late: 0,
-      outside: 0,
-      totalLatenessMinutes: 0,
-      totalPresent: 0,
-    });
-  });
-
-  records.forEach(r => {
-    let empStats = employeeMap.get(r.employeeId);
-    if (!empStats) {
-      empStats = {
-        nip: r.employeeNip,
-        name: r.employeeName,
-        department: r.department,
-        position: 'Pegawai',
-        onTime: 0,
-        late: 0,
-        outside: 0,
-        totalLatenessMinutes: 0,
-        totalPresent: 0,
-      };
-      employeeMap.set(r.employeeId, empStats);
-    }
-    empStats.totalPresent += 1;
-    if (r.status === 'ON_TIME') {
-      empStats.onTime += 1;
-    } else if (r.status === 'LATE') {
-      empStats.late += 1;
-      empStats.totalLatenessMinutes += (r.latenessMinutes || 0);
-    } else if (r.status === 'OUTSIDE_RADIUS') {
-      empStats.outside += 1;
-    }
-  });
-
-  const recapRows = Array.from(employeeMap.values()).map((stat, idx) => {
-    const baseAllowance = 1500000;
-    const deduction = stat.late * 15000 + stat.outside * 50000;
-    const finalAllowance = Math.max(0, baseAllowance - deduction);
-
-    return {
-      'No.': idx + 1,
-      'NIP': stat.nip,
-      'Nama Pegawai': stat.name,
-      'Jabatan': stat.position,
-      'Unit Pelayanan': stat.department,
-      'Total Kehadiran': stat.totalPresent,
-      'Tepat Waktu': stat.onTime,
-      'Terlambat': stat.late,
-      'Total Menit Terlambat': stat.totalLatenessMinutes,
-      'Di Luar Radius': stat.outside,
-      'Estimasi Tunjangan (Rp)': finalAllowance,
-      'Status Rekapitulasi': stat.late > 5 ? 'Perlu Evaluasi' : 'Baik',
-    };
-  });
-
-  const worksheet = XLSX.utils.json_to_sheet(recapRows);
-  worksheet['!cols'] = [
-    { wch: 6 },
-    { wch: 14 },
-    { wch: 26 },
-    { wch: 20 },
-    { wch: 24 },
-    { wch: 16 },
-    { wch: 14 },
-    { wch: 12 },
-    { wch: 20 },
-    { wch: 16 },
-    { wch: 26 },
-    { wch: 22 },
-  ];
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Rekap Gaji & Kehadiran Bulanan');
-
-  const fileName = `Rekap_Gaji_Dan_Presensi_Bulanan_${new Date().toISOString().slice(0, 10)}.xlsx`;
-  XLSX.writeFile(workbook, fileName);
+  const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Laporan_Presensi_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
+
 
