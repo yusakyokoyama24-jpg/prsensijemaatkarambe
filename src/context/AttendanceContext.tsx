@@ -217,14 +217,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
       if (typeof window !== 'undefined' && (!parsed.appUrl || parsed.appUrl.includes('localhost'))) {
         parsed.appUrl = window.location.origin;
       }
-      if (
-        parsed.churchName &&
-        (parsed.churchName.includes('RANTEPAO') || parsed.churchName.includes('KARAMBO'))
-      ) {
-        parsed.churchName = INITIAL_SETTINGS.churchName;
-        parsed.churchSubtitle = INITIAL_SETTINGS.churchSubtitle;
-        parsed.churchAddress = INITIAL_SETTINGS.churchAddress;
-      }
+
       if (!parsed.logoUrl) {
         parsed.logoUrl = INITIAL_SETTINGS.logoUrl;
       }

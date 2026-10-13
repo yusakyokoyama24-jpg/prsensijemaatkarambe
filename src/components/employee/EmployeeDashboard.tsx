@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   Sparkles,
   Camera,
+  QrCode,
   Compass,
   RefreshCw,
 } from 'lucide-react';
@@ -195,6 +196,7 @@ export const EmployeeDashboard: React.FC = () => {
       {/* Navigation Tabs with Varied, Artistic & Luxurious Gradients */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
         <div className="flex items-center gap-2">
+
           <button
             onClick={() => setActiveTab('HOME')}
             className={`px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${

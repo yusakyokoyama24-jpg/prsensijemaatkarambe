@@ -94,6 +94,8 @@ export const EmployeeManagement: React.FC = () => {
         position,
         avatar,
       });
+      setActionToast(`Perubahan data pegawai "${name}" berhasil disimpan!`);
+      setTimeout(() => setActionToast(null), 3500);
       setEditingUser(null);
     } else if (isAdding) {
       addEmployee({
@@ -108,6 +110,8 @@ export const EmployeeManagement: React.FC = () => {
         assignedLocationIds: locations.map((l) => l.id),
         isActive: true,
       });
+      setActionToast(`Pegawai baru "${name}" berhasil ditambahkan & disimpan!`);
+      setTimeout(() => setActionToast(null), 3500);
       setIsAdding(false);
     }
   };
