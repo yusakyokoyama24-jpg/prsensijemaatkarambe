@@ -1,0 +1,11 @@
+{
+  "name": "Presensi Pegawai Gereja",
+  "description": "Sistem Presensi Pegawai Gereja Berbasis GPS Geofencing, Kamera Selfie, Portal Terpisah Admin & Pegawai, PWA, dan Laporan Real-Time.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

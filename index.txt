@@ -1,0 +1,57 @@
+========================================================
+SISTEM PRESENSI PEGAWAI GEREJA TORAJA JEMAAT KARAMBE
+INDEX FILE & COMPLETE ARCHITECTURE DOCUMENTATION
+========================================================
+
+1. DIREKTORI UTAMA & STRUKTUR FILE (FILE TREE)
+--------------------------------------------------------
+/
+├── index.html                  # HTML entry point dengan meta tag & judul aplikasi
+├── package.json                # Dependensi proyek (React, Leaflet, Tailwind CSS v4, XLSX, Lucide)
+├── vite.config.ts              # Konfigurasi Vite & PWA plugin
+├── tsconfig.json               # Konfigurasi TypeScript
+├── code.txt                    # Ringkasan source code aplikasi
+└── src/
+    ├── main.tsx                # React DOM render entry point
+    ├── App.tsx                 # Layout utama, perpindahan portal & demo switcher
+    ├── index.css               # Styling global Tailwind CSS v4 & custom animations
+    ├── types/
+    │   └── index.ts            # Definisi tipe data (UserProfile, AttendanceRecord, ScheduleSettings, dll)
+    ├── context/
+    │   └── AttendanceContext.tsx # State management global, localStorage sync & business logic
+    ├── hooks/
+    │   └── usePWA.ts           # Hook PWA installation & service worker status
+    ├── utils/
+    │   ├── geo.ts              # Haversine distance formula & HTML5 Geolocation API
+    │   ├── time.ts             # Format tanggal & waktu zona WITA/WIB/WITA toraja
+    │   └── export.ts           # Ekspor Excel (.xlsx) presensi & rekap gaji bulanan
+    └── components/
+        ├── Navbar.tsx          # Navbar utama dengan logo Toraja & tombol switch portal
+        ├── OfflineBanner.tsx   # Banner status koneksi internet (Online / Offline)
+        ├── PWAInstallButton.tsx # Tombol instalasi Progressive Web App
+        ├── common/
+        │   ├── ChurchMap.tsx   # Peta interaktif Leaflet.js (Geofence radius, church marker, user location)
+        │   └── TorajaMotif.tsx # Ornamen & motif ukiran khas Toraja untuk identitas gereja
+        ├── employee/
+        │   ├── EmployeeDashboard.tsx     # Dashboard pegawai & peta real-time GPS
+        │   ├── AttendanceCaptureModal.tsx # Modal GPS validation & selfie camera
+        │   ├── AttendanceHistory.tsx     # Riwayat presensi personal & kalender kehadiran
+        │   ├── LeaveRequestModal.tsx     # Pengajuan izin / cuti / dinas luar
+        │   ├── CorrectionRequestModal.tsx# Pengajuan koreksi absensi
+        │   └── ChangePhotoModal.tsx      # Ubah foto profil custom pegawai
+        └── admin/
+            ├── AdminDashboard.tsx      # Statistik kehadiran, grafik & monitoring real-time
+            ├── ReportsView.tsx         # Laporan presensi & tombol ekspor rekap gaji bulanan (.xlsx)
+            ├── EmployeesView.tsx       # Manajemen data pegawai & akun
+            ├── GeofenceSettingsView.tsx# Pengaturan titik kordinat gereja & radius geofence
+            └── ScheduleSettingsView.tsx# Pengaturan jam masuk, pulang & toleransi keterlambatan
+
+2. FITUR UTAMA APLIKASI
+--------------------------------------------------------
+- **Template & Identitas Gereja Toraja Jemaat Karambe**: Desain full-colour, ornamen ukiran Toraja, simbol salib, dan nuansa biru tua (*dark blue*) yang elegan.
+- **Geofencing & Leaflet.js Real-Time Map**: Validasi radius presensi otomatis berbasis GPS dengan visualisasi peta Leaflet interaktif di dashboard pegawai dan modal check-in.
+- **Absensi 2 Sesi Harian (Pagi & Sore)**: Sesi Presensi Pagi (Mulai Tugas) dan Sesi Presensi Siang/Sore (Selesai Tugas) dengan kalkulasi keterlambatan otomatis.
+- **Selfie Wajah & Watermark**: Pengambilan foto selfie langsung melalui kamera depan perangkat dengan watermark gereja dan stempel waktu.
+- **Riwayat & Rekapitulasi Gaji Bulanan (.xlsx)**: Halaman rekap presensi di Admin Portal yang dilengkapi fitur ekspor laporan ke format Excel untuk perhitungan gaji dan tunjangan pegawai.
+- **Pengajuan Izin, Cuti & Koreksi**: Fitur bagi pegawai untuk mengajukan izin dinas luar atau koreksi absensi yang memerlukan persetujuan admin.
+- **PWA Ready & Offline Support**: Dapat diinstal sebagai aplikasi mobile/desktop dan tetap responsif tanpa koneksi internet penuh.

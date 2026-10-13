@@ -1,0 +1,26 @@
+========================================================
+SISTEM PRESENSI PEGAWAI GEREJA TORAJA JEMAAT KARAMBE
+Source Code Architecture & Implementation Summary
+========================================================
+
+1. PROJECT OVERVIEW
+- Application Name: Sistem Presensi Gereja Toraja Jemaat Karambe
+- Description: PWA-ready attendance and payroll/salary management portal for church employees and administrators featuring real-time GPS geofencing, Leaflet map integration, device front-camera selfie validation, monthly salary recap exports (Excel/PDF), leave and attendance correction requests, and Toraja cultural themes.
+- Tech Stack: React 19, TypeScript, Vite, Tailwind CSS v4, Lucide React icons, Leaflet.js, XLSX, Canvas Confetti.
+
+2. KEY MODULES & COMPONENTS
+- src/App.tsx: Main application layout, portal switcher (Employee vs Admin), and quick demo account switcher.
+- src/context/AttendanceContext.tsx: Global state management for users, attendance records, GPS locations, leave requests, correction requests, and settings.
+- src/components/common/ChurchMap.tsx: Interactive Leaflet.js map component rendering the church location, geofence radius circle, and real-time employee GPS marker.
+- src/components/employee/EmployeeDashboard.tsx: Employee portal featuring personal attendance dashboard, live Leaflet GPS tracking map, morning/afternoon check-in modal, leave requests, and attendance history.
+- src/components/employee/AttendanceCaptureModal.tsx: Multi-step modal for GPS geofence validation, webcam/simulation selfie capture with watermarks, and submission.
+- src/components/admin/AdminPortal.tsx: Comprehensive admin dashboard with analytics, live monitoring, report generation, monthly salary recap, employee management, and geofence configuration.
+- src/utils/export.ts: Excel (.xlsx) export utilities for attendance logs and monthly salary recapitulation.
+- src/utils/geo.ts: Haversine distance formula and HTML5 Geolocation API wrapper.
+
+3. RECENT FEATURES ADDED
+- Dark blue full-colour church theme styling.
+- Custom profile photo replacement for employees.
+- Monthly salary recap export in Excel (.xlsx) format for salary payroll calculations.
+- Real-time Leaflet.js visual GPS map in the employee dashboard showing live check-in position and geofence radius.
+- Progressive Web App (PWA) install capability and offline support.
