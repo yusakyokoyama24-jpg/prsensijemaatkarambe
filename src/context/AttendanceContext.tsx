@@ -238,9 +238,22 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
     return initial;
   });
 
-  // Current logged in user (default to Yusak Yokoyama as admin)
+  // Current logged in user (restores real session or defaults to Yusak Yokoyama)
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    return users.find((u) => u.id === 'usr-admin-yusak' || u.name?.includes('Yusak')) || users.find((u) => u.role === 'SUPER_ADMIN') || users[0] || null;
+    if (typeof window !== 'undefined') {
+      const savedUserId = localStorage.getItem(`${LOCAL_STORAGE_KEY}_logged_user_id`);
+      if (savedUserId === 'LOGGED_OUT') return null;
+      if (savedUserId) {
+        const found = users.find((u) => u.id === savedUserId);
+        if (found) return found;
+      }
+    }
+    return (
+      users.find((u) => u.id === 'usr-admin-yusak' || u.name?.includes('Yusak')) ||
+      users.find((u) => u.role === 'SUPER_ADMIN') ||
+      users[0] ||
+      null
+    );
   });
 
   // Active portal view ('EMPLOYEE' or 'ADMIN') - default to ADMIN for Yusak Yokoyama
@@ -526,8 +539,10 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
     const user = users.find((u) => u.id === userId);
     if (user) {
       setCurrentUser(user);
-      if (user.role === 'SUPER_ADMIN' || user.role === 'CHURCH_ADMIN') {
-        // Automatically default admin to Admin Portal if desired
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_KEY}_logged_user_id`, user.id);
+      } catch (e) {
+        console.warn('LocalStorage save login error:', e);
       }
       logAudit('LOGIN_USER', `Pengguna ${user.name} (${user.role}) berhasil masuk.`);
     }
@@ -543,6 +558,11 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
     );
     if (user) {
       setCurrentUser(user);
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_KEY}_logged_user_id`, user.id);
+      } catch (e) {
+        console.warn('LocalStorage save login error:', e);
+      }
       logAudit('LOGIN_USER', `Pengguna ${user.name} berhasil login via kredensial.`);
       return true;
     }
@@ -551,9 +571,17 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = () => {
     if (currentUser) {
-      logAudit('LOGOUT_USER', `Pengguna ${currentUser.name} keluar.`);
+      logAudit('LOGOUT_USER', `Pengguna ${currentUser.name} keluar dari sistem.`);
     }
     setCurrentUser(null);
+    setIsAdminUnlocked(false);
+    try {
+      sessionStorage.removeItem('church_admin_pin_unlocked');
+      localStorage.setItem(`${LOCAL_STORAGE_KEY}_logged_user_id`, 'LOGGED_OUT');
+    } catch (e) {
+      console.warn('LocalStorage remove login error:', e);
+    }
+    setActivePortalState('EMPLOYEE');
   };
 
   const getTodayRecord = (employeeId: string, session: SessionType) => {

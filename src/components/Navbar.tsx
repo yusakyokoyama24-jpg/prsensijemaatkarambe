@@ -17,7 +17,7 @@ import {
 import { ChangeLogoModal } from './common/ChangeLogoModal';
 import { TorajaHeaderStrip } from './common/TorajaMotif';
 
-export const Navbar: React.FC<{ onOpenDemoModal?: () => void }> = ({ onOpenDemoModal }) => {
+export const Navbar: React.FC = () => {
   const {
     currentUser,
     activePortal,
@@ -210,33 +210,16 @@ export const Navbar: React.FC<{ onOpenDemoModal?: () => void }> = ({ onOpenDemoM
                       </button>
                     </div>
 
-                    {/* Quick Demo Switcher */}
-                    <div className="px-3 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                      Ganti Akun Cepat (Simulasi)
-                    </div>
-                    <div className="max-h-48 overflow-y-auto space-y-1 mb-2">
-                      {users.map((u) => (
-                        <button
-                          key={u.id}
-                          onClick={() => {
-                            login(u.id);
-                            setShowUserMenu(false);
-                          }}
-                          className={`flex items-center gap-2 w-full px-2.5 py-1.5 text-xs rounded-lg text-left transition ${
-                            u.id === currentUser.id
-                              ? 'bg-amber-500/20 text-amber-300 font-bold'
-                              : 'text-slate-300 hover:bg-slate-800'
-                          }`}
-                        >
-                          <img src={u.avatar} alt="" className="w-5 h-5 rounded-md object-cover" />
-                          <div className="truncate flex-1">
-                            <span className="block truncate">{u.name}</span>
-                            <span className="text-[10px] text-slate-400 block">
-                              {u.role === 'SUPER_ADMIN' ? 'Admin' : u.position}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
+                    {/* Account Details */}
+                    <div className="px-3 py-2 bg-slate-950/60 rounded-xl mb-2 text-[11px] space-y-1">
+                      <div className="flex justify-between text-slate-400">
+                        <span>NIP:</span>
+                        <span className="text-white font-mono font-bold">{currentUser.nip}</span>
+                      </div>
+                      <div className="flex justify-between text-slate-400">
+                        <span>Jabatan:</span>
+                        <span className="text-amber-300 font-semibold truncate max-w-[130px]">{currentUser.position}</span>
+                      </div>
                     </div>
 
                     <div className="pt-1 border-t border-slate-800">
@@ -256,10 +239,10 @@ export const Navbar: React.FC<{ onOpenDemoModal?: () => void }> = ({ onOpenDemoM
               </div>
             ) : (
               <button
-                onClick={() => login('usr-emp-1')}
-                className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition"
+                onClick={() => logout()}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition cursor-pointer"
               >
-                Masuk
+                Masuk ke Akun
               </button>
             )}
           </div>
