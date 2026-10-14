@@ -19,6 +19,7 @@ export const INITIAL_SETTINGS: AppSettings = {
   appUrl: typeof window !== "undefined" ? window.location.origin : "https://presensi-gereja.org",
   timezone: "Asia/Makassar",
   timezoneLabel: "WITA",
+  adminPin: "2026",
 };
 
 export const INITIAL_UNITS: WorkUnit[] = [

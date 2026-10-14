@@ -189,6 +189,10 @@ export const EmployeeDashboard: React.FC = () => {
             <p className="text-[11px] text-slate-300 mt-1">
               Zona Waktu: <strong className="text-amber-400 font-bold">{schedule.timezoneLabel} (Waktu Lokal)</strong>
             </p>
+            <div className="flex items-center sm:justify-end gap-1.5 text-emerald-400 text-[10px] font-bold mt-1.5 pt-1.5 border-t border-slate-800/80">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Sinkronisasi Otomatis Real-Time</span>
+            </div>
           </div>
         </div>
       </div>

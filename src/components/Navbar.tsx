@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Building2,
   Camera,
+  Lock,
 } from 'lucide-react';
 import { ChangeLogoModal } from './common/ChangeLogoModal';
 import { TorajaHeaderStrip } from './common/TorajaMotif';
@@ -26,6 +27,8 @@ export const Navbar: React.FC<{ onOpenDemoModal?: () => void }> = ({ onOpenDemoM
     schedule,
     users,
     login,
+    requestAdminAccess,
+    isAdminUnlocked,
   } = useAttendance();
 
   const [timeStr, setTimeStr] = useState('');
@@ -128,11 +131,7 @@ export const Navbar: React.FC<{ onOpenDemoModal?: () => void }> = ({ onOpenDemoM
 
               <button
                 onClick={() => {
-                  if (!isAdmin) {
-                    alert('Akses Ditolak: Portal Admin hanya dapat diakses oleh Administrator (Yusak Yokoyama, Pdt. Markus, atau Pengurus Majelis).');
-                    return;
-                  }
-                  setActivePortal('ADMIN');
+                  requestAdminAccess();
                 }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
                   activePortal === 'ADMIN'
@@ -195,7 +194,11 @@ export const Navbar: React.FC<{ onOpenDemoModal?: () => void }> = ({ onOpenDemoM
                     <div className="md:hidden py-1 border-b border-slate-800/80 mb-1">
                       <button
                         onClick={() => {
-                          setActivePortal(activePortal === 'EMPLOYEE' ? 'ADMIN' : 'EMPLOYEE');
+                          if (activePortal === 'EMPLOYEE') {
+                            requestAdminAccess();
+                          } else {
+                            setActivePortal('EMPLOYEE');
+                          }
                           setShowUserMenu(false);
                         }}
                         className="flex items-center gap-2 w-full px-3 py-2 text-xs rounded-lg hover:bg-slate-800 text-slate-300"
@@ -281,7 +284,7 @@ export const Navbar: React.FC<{ onOpenDemoModal?: () => void }> = ({ onOpenDemoM
               Pegawai
             </button>
             <button
-              onClick={() => setActivePortal('ADMIN')}
+              onClick={() => requestAdminAccess()}
               className={`px-3 py-1 rounded-md text-[11px] font-bold transition ${
                 activePortal === 'ADMIN'
                   ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-sm'

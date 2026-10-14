@@ -164,4 +164,5 @@ export interface AppSettings {
   appUrl: string; // Default host URL
   timezone: TimezoneOption;
   timezoneLabel: TimezoneLabel;
+  adminPin?: string; // Secure PIN for accessing Admin Portal
 }

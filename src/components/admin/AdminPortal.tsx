@@ -9,6 +9,7 @@ import { LiveAttendanceMonitor } from './LiveAttendanceMonitor';
 import { ReportsView } from './ReportsView';
 import { ScheduleSettings } from './ScheduleSettings';
 import { SqlSchemaModal } from './SqlSchemaModal';
+import { ChangePinModal } from './ChangePinModal';
 import {
   Clock,
   Database,
@@ -21,6 +22,9 @@ import {
   Users,
   Activity,
   Layers,
+  Lock,
+  KeyRound,
+  CheckCircle2,
 } from 'lucide-react';
 
 type AdminTab =
@@ -34,7 +38,9 @@ type AdminTab =
   | 'AUDIT';
 
 export const AdminPortal: React.FC = () => {
-  const { currentUser, login, users } = useAttendance();
+  const { currentUser, login, users, isAdminUnlocked, lockAdminPortal, openPinModal } = useAttendance();
+  const [showChangePinModal, setShowChangePinModal] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AdminTab>('MONITOR');
   const [showSqlModal, setShowSqlModal] = useState(false);
 
@@ -42,6 +48,29 @@ export const AdminPortal: React.FC = () => {
     currentUser?.role === 'SUPER_ADMIN' ||
     currentUser?.role === 'CHURCH_ADMIN' ||
     currentUser?.role === 'UNIT_HEAD';
+
+  if (!isAdminUnlocked) {
+    return (
+      <div className="max-w-md mx-auto py-16 px-4 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mx-auto mb-4 shadow-lg shadow-rose-950/40">
+          <Lock className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-white">Portal Admin Terkunci</h2>
+        <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+          Portal administrasi dilindungi PIN keamanan untuk menjaga kerahasiaan data jemaat & pegawai.
+        </p>
+        <div className="mt-6 flex flex-col gap-2">
+          <button
+            onClick={openPinModal}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white font-bold text-xs shadow-lg shadow-rose-900/40 hover:brightness-110 transition cursor-pointer flex items-center justify-center gap-2"
+          >
+            <KeyRound className="w-4 h-4" />
+            <span>Buka Kunci Portal Admin</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (
@@ -104,14 +133,36 @@ export const AdminPortal: React.FC = () => {
           </div>
         </div>
 
-        {/* Database Schema Button */}
-        <button
-          onClick={() => setShowSqlModal(true)}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-bold text-xs shadow-md transition cursor-pointer self-start sm:self-auto"
-        >
-          <Database className="w-4 h-4" />
-          <span>Skema SQL Database</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Ubah PIN Button */}
+          <button
+            onClick={() => setShowChangePinModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold text-xs border border-amber-500/30 transition cursor-pointer"
+            title="Ubah PIN Keamanan Portal Admin"
+          >
+            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+            <span>Ubah PIN</span>
+          </button>
+
+          {/* Kunci Portal Button */}
+          <button
+            onClick={lockAdminPortal}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 font-semibold text-xs border border-rose-500/40 transition cursor-pointer"
+            title="Kunci kembali portal admin"
+          >
+            <Lock className="w-3.5 h-3.5 text-rose-400" />
+            <span>Kunci Portal</span>
+          </button>
+
+          {/* Database Schema Button */}
+          <button
+            onClick={() => setShowSqlModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-bold text-xs shadow-md transition cursor-pointer"
+          >
+            <Database className="w-4 h-4" />
+            <span>Skema SQL Database</span>
+          </button>
+        </div>
       </div>
 
       {/* Admin Horizontal Tabs with Varied, Artistic & Luxurious Colors */}
@@ -133,6 +184,24 @@ export const AdminPortal: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Change PIN Modal */}
+      <ChangePinModal
+        isOpen={showChangePinModal}
+        onClose={() => setShowChangePinModal(false)}
+        onSuccessToast={(msg) => {
+          setToastMsg(msg);
+          setTimeout(() => setToastMsg(null), 3500);
+        }}
+      />
+
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-bold animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{toastMsg}</span>
+        </div>
+      )}
 
       {/* Tab Contents */}
       <div>

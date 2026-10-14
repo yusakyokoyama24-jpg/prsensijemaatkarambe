@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import {
   AppSettings,
   AttendanceCorrection,
@@ -58,7 +58,15 @@ interface AttendanceContextType {
   overtimeRequests: OvertimeRequest[];
   auditLogs: AuditLog[];
   settings: AppSettings;
-
+  // PIN & Admin Security
+  isAdminUnlocked: boolean;
+  showPinModal: boolean;
+  openPinModal: () => void;
+  closePinModal: () => void;
+  verifyAdminPin: (pin: string) => boolean;
+  lockAdminPortal: () => void;
+  updateAdminPin: (newPin: string) => void;
+  requestAdminAccess: () => void;
   // Portal & Auth actions
   login: (userId: string) => void;
   loginByNip: (nipOrEmail: string) => boolean;
@@ -236,39 +244,271 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
   });
 
   // Active portal view ('EMPLOYEE' or 'ADMIN') - default to ADMIN for Yusak Yokoyama
-  const [activePortal, setActivePortal] = useState<'EMPLOYEE' | 'ADMIN'>('ADMIN');
+    // PIN & Admin Lock State
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('church_admin_pin_unlocked') === 'true';
+    }
+    return false;
+  });
+  const [showPinModal, setShowPinModal] = useState<boolean>(false);
+  const [activePortal, setActivePortalState] = useState<'EMPLOYEE' | 'ADMIN'>('EMPLOYEE');
 
-  // Sync to local storage
+  const openPinModal = () => setShowPinModal(true);
+  const closePinModal = () => setShowPinModal(false);
+
+  const verifyAdminPin = (enteredPin: string): boolean => {
+    const correctPin = settings.adminPin || '2026';
+    if (enteredPin.trim() === correctPin.trim()) {
+      setIsAdminUnlocked(true);
+      try {
+        sessionStorage.setItem('church_admin_pin_unlocked', 'true');
+      } catch (e) {
+        console.warn('SessionStorage write error:', e);
+      }
+      setActivePortalState('ADMIN');
+      setShowPinModal(false);
+      logAudit('PIN_ADMIN_BERHASIL', 'Akses Portal Admin berhasil diverifikasi via PIN.');
+      return true;
+    }
+    logAudit('PIN_ADMIN_GAGAL', 'Percobaan akses Portal Admin gagal (PIN salah).');
+    return false;
+  };
+
+  const lockAdminPortal = () => {
+    setIsAdminUnlocked(false);
+    try {
+      sessionStorage.removeItem('church_admin_pin_unlocked');
+    } catch (e) {
+      console.warn('SessionStorage remove error:', e);
+    }
+    setActivePortalState('EMPLOYEE');
+    logAudit('KUNCI_PORTAL_ADMIN', 'Portal Admin berhasil dikunci kembali.');
+  };
+
+  const updateAdminPin = (newPin: string) => {
+    const trimmed = newPin.trim();
+    setSettings((prev) => {
+      const updated = { ...prev, adminPin: trimmed };
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_KEY}_settings`, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('LocalStorage save settings error:', e);
+      }
+      return updated;
+    });
+    logAudit('UBAH_PIN_ADMIN', 'PIN Keamanan Portal Admin berhasil diperbarui.');
+  };
+
+  const requestAdminAccess = () => {
+    if (isAdminUnlocked) {
+      setActivePortalState('ADMIN');
+    } else {
+      setShowPinModal(true);
+    }
+  };
+
+  const setActivePortal = (portal: 'EMPLOYEE' | 'ADMIN') => {
+    if (portal === 'ADMIN') {
+      if (isAdminUnlocked) {
+        setActivePortalState('ADMIN');
+      } else {
+        setShowPinModal(true);
+      }
+    } else {
+      setActivePortalState('EMPLOYEE');
+    }
+  };
+
+  // Real-Time Cross-Tab / Cross-Window Broadcast & Auto-Sync
+  const isReloadingFromStorageRef = useRef<boolean>(false);
+  const lastSyncTimestampRef = useRef<number>(Date.now());
+
+  const broadcastRealtimeSync = (source: string = 'CHANGE') => {
+    if (isReloadingFromStorageRef.current) return;
+    try {
+      const now = Date.now();
+      lastSyncTimestampRef.current = now;
+      localStorage.setItem(`${LOCAL_STORAGE_KEY}_last_sync`, now.toString());
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const channel = new BroadcastChannel('church_attendance_realtime_sync');
+        channel.postMessage({ type: 'SYNC', source, timestamp: now });
+        channel.close();
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('church_local_sync', { detail: { source, timestamp: now } }));
+      }
+    } catch (e) {
+      console.warn('Broadcast sync error:', e);
+    }
+  };
+
+  const reloadStateFromStorage = () => {
+    if (isReloadingFromStorageRef.current) return;
+    isReloadingFromStorageRef.current = true;
+    try {
+      // 1. Users
+      const savedUsers = localStorage.getItem(`${LOCAL_STORAGE_KEY}_users`);
+      if (savedUsers) {
+        const parsed: UserProfile[] = JSON.parse(savedUsers);
+        const filtered = parsed.filter(
+          (u) => !['usr-emp-1', 'usr-emp-2', 'usr-emp-3', 'usr-emp-4', 'usr-emp-5'].includes(u.id)
+        );
+        setUsers(filtered);
+        // Automatically sync currentUser profile in real-time if modified by admin
+        setCurrentUser((prev) => {
+          if (!prev) return prev;
+          const fresh = filtered.find((u) => u.id === prev.id);
+          return fresh ? { ...prev, ...fresh } : prev;
+        });
+      }
+
+      // 2. Units
+      const savedUnits = localStorage.getItem(`${LOCAL_STORAGE_KEY}_units`);
+      if (savedUnits) setWorkUnits(JSON.parse(savedUnits));
+
+      // 3. Locations (Geofence radius, coords)
+      const savedLocs = localStorage.getItem(`${LOCAL_STORAGE_KEY}_locs`);
+      if (savedLocs) setLocations(JSON.parse(savedLocs));
+
+      // 4. Schedule (Morning/Afternoon hours, tolerances)
+      const savedSched = localStorage.getItem(`${LOCAL_STORAGE_KEY}_sched`);
+      if (savedSched) setSchedule(JSON.parse(savedSched));
+
+      // 5. Attendance Records
+      const savedRecords = localStorage.getItem(`${LOCAL_STORAGE_KEY}_records`);
+      if (savedRecords) setAttendanceRecords(JSON.parse(savedRecords));
+
+      // 6. Leave Requests (Approvals/Rejections updated in real-time)
+      const savedLeaves = localStorage.getItem(`${LOCAL_STORAGE_KEY}_leaves`);
+      if (savedLeaves) setLeaveRequests(JSON.parse(savedLeaves));
+
+      // 7. Corrections
+      const savedCorrections = localStorage.getItem(`${LOCAL_STORAGE_KEY}_corrections`);
+      if (savedCorrections) setCorrections(JSON.parse(savedCorrections));
+
+      // 8. Overtime
+      const savedOvertime = localStorage.getItem(`${LOCAL_STORAGE_KEY}_overtime`);
+      if (savedOvertime) setOvertimeRequests(JSON.parse(savedOvertime));
+
+      // 9. App Settings (Church name, logo, contacts)
+      const savedSettings = localStorage.getItem(`${LOCAL_STORAGE_KEY}_settings`);
+      if (savedSettings) setSettings(JSON.parse(savedSettings));
+
+      // 10. Audit Logs
+      const savedAudit = localStorage.getItem(`${LOCAL_STORAGE_KEY}_audit`);
+      if (savedAudit) setAuditLogs(JSON.parse(savedAudit));
+    } catch (err) {
+      console.warn('Real-time sync reload error:', err);
+    } finally {
+      setTimeout(() => {
+        isReloadingFromStorageRef.current = false;
+      }, 150);
+    }
+  };
+
+  // Sync to local storage & trigger broadcast on any state mutation
   useEffect(() => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_users`, JSON.stringify(users));
+    broadcastRealtimeSync('USERS');
   }, [users]);
   useEffect(() => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_units`, JSON.stringify(workUnits));
+    broadcastRealtimeSync('UNITS');
   }, [workUnits]);
   useEffect(() => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_locs`, JSON.stringify(locations));
+    broadcastRealtimeSync('LOCS');
   }, [locations]);
   useEffect(() => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_sched`, JSON.stringify(schedule));
+    broadcastRealtimeSync('SCHED');
   }, [schedule]);
   useEffect(() => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_records`, JSON.stringify(attendanceRecords));
+    broadcastRealtimeSync('RECORDS');
   }, [attendanceRecords]);
   useEffect(() => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_leaves`, JSON.stringify(leaveRequests));
+    broadcastRealtimeSync('LEAVES');
   }, [leaveRequests]);
   useEffect(() => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_corrections`, JSON.stringify(corrections));
+    broadcastRealtimeSync('CORRECTIONS');
   }, [corrections]);
   useEffect(() => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_overtime`, JSON.stringify(overtimeRequests));
+    broadcastRealtimeSync('OVERTIME');
   }, [overtimeRequests]);
   useEffect(() => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_audit`, JSON.stringify(auditLogs));
+    broadcastRealtimeSync('AUDIT');
   }, [auditLogs]);
   useEffect(() => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_settings`, JSON.stringify(settings));
+    broadcastRealtimeSync('SETTINGS');
   }, [settings]);
+
+  // Real-time synchronization listeners (StorageEvent, BroadcastChannel, focus, and polling fallback)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // 1. Native cross-tab storage event
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key && e.key.startsWith(LOCAL_STORAGE_KEY)) {
+        reloadStateFromStorage();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    // 2. BroadcastChannel for instant inter-tab message passing
+    let channel: BroadcastChannel | null = null;
+    if ('BroadcastChannel' in window) {
+      try {
+        channel = new BroadcastChannel('church_attendance_realtime_sync');
+        channel.onmessage = () => {
+          reloadStateFromStorage();
+        };
+      } catch (e) {
+        console.warn('BroadcastChannel init error:', e);
+      }
+    }
+
+    // 3. In-tab custom event
+    const handleLocalSync = () => {
+      reloadStateFromStorage();
+    };
+    window.addEventListener('church_local_sync', handleLocalSync);
+
+    // 4. Polling heartbeat every 1500ms to guarantee sync on mobile browsers / background tabs
+    let lastSync = localStorage.getItem(`${LOCAL_STORAGE_KEY}_last_sync`);
+    const interval = setInterval(() => {
+      const current = localStorage.getItem(`${LOCAL_STORAGE_KEY}_last_sync`);
+      if (current && current !== lastSync) {
+        lastSync = current;
+        reloadStateFromStorage();
+      }
+    }, 1500);
+
+    // 5. Visibility and focus listeners (instant sync when employee re-opens or switches to tab)
+    const handleFocus = () => reloadStateFromStorage();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        reloadStateFromStorage();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('church_local_sync', handleLocalSync);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (channel) channel.close();
+      clearInterval(interval);
+    };
+  }, []);
 
   const logAudit = (action: string, details: string) => {
     const newLog: AuditLog = {
@@ -668,6 +908,14 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         currentUser,
         activePortal,
+        isAdminUnlocked,
+        showPinModal,
+        openPinModal,
+        closePinModal,
+        verifyAdminPin,
+        lockAdminPortal,
+        updateAdminPin,
+        requestAdminAccess,
         users,
         workUnits,
         locations,

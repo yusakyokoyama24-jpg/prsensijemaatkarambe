@@ -4,10 +4,11 @@ import { Navbar } from './components/Navbar';
 import { OfflineBanner } from './components/OfflineBanner';
 import { EmployeeDashboard } from './components/employee/EmployeeDashboard';
 import { AdminPortal } from './components/admin/AdminPortal';
+import { AdminPinModal } from './components/common/AdminPinModal';
 import { Shield, User, Smartphone, Users } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
-  const { activePortal, setActivePortal, currentUser, login, users, settings } = useAttendance();
+  const { activePortal, setActivePortal, currentUser, login, users, settings, showPinModal, closePinModal, isAdminUnlocked } = useAttendance();
   const [showDemoSelector, setShowDemoSelector] = useState(false);
 
   const isAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'CHURCH_ADMIN' || currentUser?.role === 'UNIT_HEAD';
@@ -18,7 +19,7 @@ const MainLayout: React.FC = () => {
       const path = window.location.pathname.toLowerCase();
       const search = window.location.search.toLowerCase();
       if (path.includes('admin') || search.includes('portal=admin')) {
-        if (isAdmin) {
+        if (isAdmin && isAdminUnlocked) {
           setActivePortal('ADMIN');
         } else {
           setActivePortal('EMPLOYEE');
@@ -27,7 +28,7 @@ const MainLayout: React.FC = () => {
         setActivePortal('EMPLOYEE');
       }
     }
-  }, [setActivePortal, isAdmin]);
+  }, [setActivePortal, isAdmin, isAdminUnlocked]);
 
   useEffect(() => {
     if (activePortal === 'ADMIN' && !isAdmin) {
@@ -119,6 +120,12 @@ const MainLayout: React.FC = () => {
         )}
       </div>
 
+      {/* Admin PIN Verification Modal */}
+      <AdminPinModal
+        isOpen={showPinModal}
+        onClose={closePinModal}
+      />
+
       {/* Footer */}
       <footer className="no-print bg-blue-950/80 py-6 text-center text-xs text-slate-200">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -130,7 +137,10 @@ const MainLayout: React.FC = () => {
             Sistem Presensi Pegawai Berbasis GPS Geofencing, MediaDevices Selfie Camera & Progressive Web App (PWA).
           </p>
           <div className="flex items-center gap-3 text-[11px]">
-            <span className="text-emerald-400">● Sistem Aktif</span>
+            <span className="text-emerald-400 flex items-center gap-1.5 font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Sinkronisasi Real-Time Aktif
+            </span>
             <span>v2.4.0</span>
           </div>
         </div>
