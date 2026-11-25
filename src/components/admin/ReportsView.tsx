@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useAttendance } from '../../context/AttendanceContext';
 import { exportAttendanceToExcel, exportAttendanceToCSV } from '../../utils/export';
+import { exportAttendanceToPDF } from '../../utils/pdfExport';
 import { getCurrentDateStr } from '../../utils/time';
 import { AttendanceRecord } from '../../types';
 import {
   Calendar,
   Download,
+  FileText,
+  Sparkles,
   FileSpreadsheet,
   Filter,
   Printer,
@@ -63,6 +66,38 @@ export const ReportsView: React.FC = () => {
   };
 
 
+
+  const handleExportPDF = () => {
+    const dateObj = new Date(startDate);
+    const monthName = dateObj.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    exportAttendanceToPDF({
+      records: filteredRecords,
+      employees: users,
+      settings,
+      monthName,
+      periodFilterText: `${startDate} s/d ${endDate}`,
+      departmentFilter: departmentFilter !== 'ALL' ? departmentFilter : undefined,
+    });
+  };
+
+  const handleSetCurrentMonth = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+    setStartDate(`${year}-${month}-01`);
+    setEndDate(`${year}-${month}-${String(lastDay).padStart(2, '0')}`);
+  };
+
+  const handleSetLastMonth = () => {
+    const now = new Date();
+    now.setMonth(now.getMonth() - 1);
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+    setStartDate(`${year}-${month}-01`);
+    setEndDate(`${year}-${month}-${String(lastDay).padStart(2, '0')}`);
+  };
 
   const handlePrint = () => {
     window.print();
@@ -131,6 +166,15 @@ export const ReportsView: React.FC = () => {
 
 
           <button
+            type="button"
+            onClick={handleExportPDF}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:brightness-110 active:scale-98 text-white font-black text-xs transition cursor-pointer shadow-lg shadow-rose-950/40 border border-rose-400/30"
+            title="Unduh laporan presensi bulanan resmi siap arsip & cetak dalam format PDF"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Unduh PDF Bulanan (.pdf)</span>
+          </button>
+          <button
             onClick={handleExportExcel}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition cursor-pointer shadow-md"
           >
@@ -158,8 +202,32 @@ export const ReportsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="no-print p-4 rounded-2xl bg-slate-900 border border-slate-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+      {/* Filter Bar & Quick Month Selectors */}
+      <div className="no-print p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
+          <span className="font-bold text-amber-300 flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Pintasan Periode Laporan Bulanan:</span>
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleSetCurrentMonth}
+              className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold transition cursor-pointer"
+            >
+              Bulan Berjalan (Bulan Ini)
+            </button>
+            <button
+              type="button"
+              onClick={handleSetLastMonth}
+              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold transition cursor-pointer"
+            >
+              Bulan Kemarin
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div>
           <label className="block text-slate-400 font-semibold mb-1">Mulai Tanggal</label>
           <input
@@ -211,6 +279,7 @@ export const ReportsView: React.FC = () => {
         </div>
       </div>
 
+      </div>
       {/* Summary KPI Pills */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
         <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
@@ -264,7 +333,18 @@ export const ReportsView: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <p className="font-bold text-white">{r.employeeName}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-white">{r.employeeName}</span>
+                        {r.faceVerified && (
+                          <span
+                            title={`Wajah terverifikasi biometrik AI (${r.faceConfidence || 92}%)`}
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold"
+                          >
+                            <Sparkles className="w-2.5 h-2.5" />
+                            <span>AI {r.faceConfidence || 92}%</span>
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] font-mono text-slate-400">{r.employeeNip}</p>
                     </td>
                     <td className="py-3 px-4 text-slate-300">{r.department}</td>

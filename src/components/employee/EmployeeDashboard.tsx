@@ -19,7 +19,7 @@ import {
   Smartphone,
   Sun,
   Sunset,
-  User,
+  User, Users,
   AlertTriangle,
   Sparkles,
   Camera,
@@ -33,7 +33,7 @@ import { ChurchMap } from '../common/ChurchMap';
 import { calculateHaversineDistance, formatDistance, getDeviceCurrentLocation } from '../../utils/geo';
 
 export const EmployeeDashboard: React.FC = () => {
-  const { currentUser, schedule, getTodayRecord, settings, locations } = useAttendance();
+  const { currentUser, schedule, getTodayRecord, settings, locations, logout } = useAttendance();
 
   const [activeTab, setActiveTab] = useState<'HOME' | 'HISTORY'>('HOME');
   const [captureSession, setCaptureSession] = useState<SessionType | null>(null);
@@ -92,21 +92,9 @@ export const EmployeeDashboard: React.FC = () => {
     }
   };
 
-  const handleSimulateAtChurch = () => {
-    if (!mainLocation) return;
-    const sim = { latitude: mainLocation.latitude + 0.0001, longitude: mainLocation.longitude + 0.0001, accuracy: 5 };
-    setUserCoords(sim);
-    setDistanceMeters(calculateHaversineDistance(sim, mainLocation));
-    setGpsError(null);
-  };
+  
 
-  const handleSimulateFar = () => {
-    if (!mainLocation) return;
-    const sim = { latitude: mainLocation.latitude + 0.008, longitude: mainLocation.longitude + 0.008, accuracy: 10 };
-    setUserCoords(sim);
-    setDistanceMeters(calculateHaversineDistance(sim, mainLocation));
-    setGpsError(null);
-  };
+  
 
   const isPMG = currentUser.department?.includes('PMG');
   const isKetuaBidang = currentUser.department?.includes('Ketua Bidang');
@@ -175,6 +163,15 @@ export const EmployeeDashboard: React.FC = () => {
                   className="text-[11px] text-amber-400 hover:text-amber-300 underline font-semibold ml-1 cursor-pointer"
                 >
                   Ubah Foto
+                </button>
+                <span className="text-slate-500">•</span>
+                <button
+                  onClick={logout}
+                  className="flex items-center gap-1 text-[11px] text-amber-300 hover:text-white bg-slate-950/80 hover:bg-slate-800 px-2.5 py-1 rounded-xl border border-amber-500/30 font-bold transition cursor-pointer shadow-sm"
+                  title="Pilih nama pegawai lain di perangkat ini"
+                >
+                  <Users className="w-3 h-3 text-amber-400" />
+                  <span>Bukan Anda? Ganti Pegawai</span>
                 </button>
               </div>
               </div>
@@ -337,27 +334,7 @@ export const EmployeeDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* Simulation Quick Toolbar */}
-            <div className="flex flex-wrap items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400 gap-2">
-              <span className="font-semibold text-slate-300">Simulasi Posisi GPS (Pengujian):</span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleSimulateAtChurch}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 hover:bg-slate-700 transition font-medium cursor-pointer"
-                >
-                  ✓ Di Dalam Area (11m)
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSimulateFar}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 text-rose-400 hover:bg-slate-700 transition font-medium cursor-pointer"
-                >
-                  ✗ Di Luar Area (900m)
-                </button>
-              </div>
             </div>
-          </div>
 
           {/* TWO DAILY ATTENDANCE SESSION CARDS */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

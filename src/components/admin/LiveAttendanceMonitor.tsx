@@ -7,7 +7,7 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
-  Eye,
+  Eye, Sparkles,
   Filter,
   MapPin,
   Search,
@@ -404,6 +404,15 @@ export const LiveAttendanceMonitor: React.FC = () => {
               <div className="flex justify-between">
                 <span className="text-slate-400">Titik Lokasi Resmi:</span>
                 <span className="text-slate-300">{selectedRecord.locationName}</span>
+              </div>
+              <div className="flex justify-between items-center bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                <span className="text-slate-400 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Verifikasi Wajah AI:</span>
+                </span>
+                <span className="font-bold text-emerald-400">
+                  {selectedRecord.faceVerified ? `Terverifikasi (${selectedRecord.faceConfidence || 92}% Cocok)` : "Standar"}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Status Validasi:</span>

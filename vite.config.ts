@@ -11,12 +11,19 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['apple-touch-icon.png', 'icon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
+        includeAssets: [
+          'apple-touch-icon.png',
+          'icon.svg',
+          'pwa-192x192.png',
+          'pwa-512x512.png',
+          'pwa-maskable-512x512.png',
+        ],
         manifest: {
           id: '/',
           name: 'Presensi Pegawai Gereja',
           short_name: 'Presensi',
-          description: 'Sistem Presensi Pegawai Gereja Berbasis GPS Geofencing, Kamera Selfie, dan Laporan Real-Time.',
+          description:
+            'Sistem Presensi Pegawai Gereja Berbasis GPS Geofencing, Kamera Selfie, dan Laporan Real-Time.',
           theme_color: '#0f172a',
           background_color: '#0f172a',
           display: 'standalone',
@@ -43,20 +50,43 @@ export default defineConfig(() => {
             },
           ],
         },
+        workbox: {
+          maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/unpkg\.com\/leaflet@1\.9\.4\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'leaflet-assets-cache',
+                expiration: {
+                  maxEntries: 20,
+                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+          ],
+        },
         devOptions: {
           enabled: true,
           type: 'module',
         },
       }),
     ],
+    build: {
+      chunkSizeWarningLimit: 1600,
+    },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(import.meta.dirname || '.', '.'),
       },
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      hmr: process.env.DISABLE_HMR !== 'true',
+      // HMR is disabled in AI Studio preview environment.
+      hmr: false,
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
   };

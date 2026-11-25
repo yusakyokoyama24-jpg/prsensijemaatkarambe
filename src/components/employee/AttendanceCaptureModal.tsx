@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAttendance } from '../../context/AttendanceContext';
-import { AttendanceLocation, SessionType } from '../../types';
+import { AttendanceLocation, SessionType, FaceRecognitionResult } from '../../types';
 import { calculateHaversineDistance, formatDistance, getDeviceCurrentLocation } from '../../utils/geo';
 import { ChurchMap } from '../common/ChurchMap';
 import confetti from 'canvas-confetti';
@@ -14,6 +14,8 @@ import {
   RefreshCw,
   ShieldCheck,
   X,
+  UserCheck,
+  Scan,
   Sparkles,
 } from 'lucide-react';
 
@@ -28,7 +30,21 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { currentUser, locations, schedule, submitAttendance, settings } = useAttendance();
+  const { currentUser, locations, schedule, submitAttendance, settings, logout, login, recognizeFace } = useAttendance();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setPhotoBase64(dataUrl);
+      stopCamera();
+      runFaceRecognition(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Steps: 1 = GPS & Geofence, 2 = Selfie Camera, 3 = Confirmation / Receipt
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -55,6 +71,22 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
+
+  // AI Face Recognition Biometric state
+  const [isAnalyzingFace, setIsAnalyzingFace] = useState(false);
+  const [faceResult, setFaceResult] = useState<FaceRecognitionResult | null>(null);
+
+  const runFaceRecognition = async (dataUrl: string) => {
+    setIsAnalyzingFace(true);
+    try {
+      const res = await recognizeFace(dataUrl, currentUser?.id);
+      setFaceResult(res);
+    } catch (err) {
+      console.warn('Face recognition error:', err);
+    } finally {
+      setIsAnalyzingFace(false);
+    }
+  };
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
@@ -166,48 +198,11 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
     setPhotoBase64(dataUrl);
     stopCamera();
+    runFaceRecognition(dataUrl);
   };
 
   // Simulation selfie for browser/desktop testing without front camera
-  const handleSimulateSelfie = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 480;
-    canvas.height = 480;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Background gradient
-    const grad = ctx.createLinearGradient(0, 0, 480, 480);
-    grad.addColorStop(0, '#0f172a');
-    grad.addColorStop(1, '#1e3a8a');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 480, 480);
-
-    // Face avatar illustration
-    ctx.fillStyle = '#fde68a';
-    ctx.beginPath();
-    ctx.arc(240, 190, 80, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Body
-    ctx.fillStyle = '#2563eb';
-    ctx.beginPath();
-    ctx.arc(240, 400, 150, Math.PI, Math.PI * 2);
-    ctx.fill();
-
-    // Verified badge
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.fillRect(0, 420, 480, 60);
-    ctx.fillStyle = '#fbbf24';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.fillText(`PRESENSI SELFIE: ${currentUser?.name}`, 20, 445);
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(`${settings.churchName} • GPS VALID`, 20, 465);
-
-    setPhotoBase64(canvas.toDataURL('image/jpeg', 0.85));
-    stopCamera();
-  };
+  
 
   const handleFetchGps = async () => {
     setGpsLoading(true);
@@ -233,40 +228,10 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
   };
 
   // Helper to simulate positioning right at the church (for testing)
-  const handleSimulateAtChurch = () => {
-    if (!targetLocation) return;
-    const simCoords = {
-      latitude: targetLocation.latitude + 0.0001, // ~11 meters away
-      longitude: targetLocation.longitude + 0.0001,
-      accuracy: 5,
-    };
-    setGpsCoords(simCoords);
-    const dist = calculateHaversineDistance(
-      { latitude: simCoords.latitude, longitude: simCoords.longitude },
-      { latitude: targetLocation.latitude, longitude: targetLocation.longitude }
-    );
-    setDistanceMeters(dist);
-    setIsOutside(false);
-    setGpsError(null);
-  };
+  
 
   // Helper to simulate positioning far from church (to test geofence rejection)
-  const handleSimulateFarAway = () => {
-    if (!targetLocation) return;
-    const simCoords = {
-      latitude: targetLocation.latitude + 0.008, // ~900 meters away
-      longitude: targetLocation.longitude + 0.008,
-      accuracy: 10,
-    };
-    setGpsCoords(simCoords);
-    const dist = calculateHaversineDistance(
-      { latitude: simCoords.latitude, longitude: simCoords.longitude },
-      { latitude: targetLocation.latitude, longitude: targetLocation.longitude }
-    );
-    setDistanceMeters(dist);
-    setIsOutside(true);
-    setGpsError(null);
-  };
+  
 
   const handleFinalSubmit = async () => {
     if (!currentUser || !gpsCoords || !photoBase64) return;
@@ -370,6 +335,38 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-4 sm:p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+          {/* Active Employee Identity Banner */}
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-950/80 border border-amber-500/30 shadow-md">
+            <div className="flex items-center gap-3 min-w-0">
+              <img
+                src={currentUser?.avatar}
+                alt=""
+                className="w-10 h-10 rounded-xl object-cover ring-2 ring-amber-400 shrink-0"
+              />
+              <div className="truncate">
+                <p className="text-[10px] text-amber-300 font-bold uppercase tracking-wider">
+                  Mencatat Presensi Atas Nama:
+                </p>
+                <p className="text-xs sm:text-sm font-black text-white truncate">
+                  {currentUser?.name}
+                </p>
+                <p className="text-[10px] text-slate-400 truncate">
+                  NIP: {currentUser?.nip} • {currentUser?.department}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                logout();
+              }}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-[11px] font-bold transition cursor-pointer shrink-0 ml-2 shadow-sm"
+              title="Ganti ke nama pegawai lain"
+            >
+              Ganti Nama
+            </button>
+          </div>
           {/* STEP 1: GPS & GEOFENCING VALIDATION */}
           {step === 1 && (
             <div className="space-y-4">
@@ -495,27 +492,6 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
                 </div>
               )}
 
-              {/* Dev / Simulation Quick Helpers for testing inside and outside radius */}
-              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                <span>Simulasi Lokasi (Pengujian):</span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleSimulateAtChurch}
-                    className="px-2.5 py-1 rounded bg-slate-800 text-emerald-400 hover:bg-slate-700 transition"
-                  >
-                    ✓ Di Gereja (11m)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSimulateFarAway}
-                    className="px-2.5 py-1 rounded bg-slate-800 text-rose-400 hover:bg-slate-700 transition"
-                  >
-                    ✗ Di Luar Area (900m)
-                  </button>
-                </div>
-              </div>
-
               {/* Next Button */}
               <div className="pt-2">
                 <button
@@ -565,15 +541,54 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
                 )}
 
                 {photoBase64 ? (
-                  /* Captured Photo Preview */
-                  <div className="relative w-full h-full">
+                  /* Captured Photo Preview with AI Biometrics */
+                  <div className="relative w-full h-full overflow-hidden">
                     <img
                       src={photoBase64}
                       alt="Pratinjau Selfie"
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute top-3 left-3 px-2 py-1 rounded-md bg-emerald-500/80 text-white text-[10px] font-bold tracking-wide uppercase backdrop-blur-sm">
-                      ✓ Foto Siap Dikirim
+                    
+                    {/* Scanning radar sweep animation when analyzing */}
+                    {isAnalyzingFace && (
+                      <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center">
+                        <div className="relative w-20 h-20 mb-3 flex items-center justify-center">
+                          <div className="absolute inset-0 border-2 border-amber-400 rounded-full animate-ping opacity-60"></div>
+                          <div className="absolute inset-2 border-2 border-dashed border-emerald-400 rounded-full animate-spin"></div>
+                          <Sparkles className="w-8 h-8 text-amber-400 animate-pulse" />
+                        </div>
+                        <p className="text-xs font-black text-white tracking-wide">
+                          AI Sedang Mengenali Wajah...
+                        </p>
+                        <p className="text-[11px] text-amber-300 mt-1">
+                          Mencocokkan biometrik dengan pegawai terdaftar
+                        </p>
+                      </div>
+                    )}
+
+                    {!isAnalyzingFace && faceResult && (
+                      <div className="absolute bottom-3 inset-x-3 p-3 rounded-2xl bg-slate-950/90 backdrop-blur-md border border-emerald-500/50 text-left shadow-2xl">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 text-xs font-black text-emerald-400">
+                            <Sparkles className="w-4 h-4 text-emerald-400" />
+                            <span>Wajah Dikenali: {faceResult.employee?.name}</span>
+                          </span>
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-black border border-emerald-500/30">
+                            {faceResult.confidence}% Cocok
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 mt-0.5 truncate">
+                          {faceResult.employee?.position} • {faceResult.employee?.department}
+                        </p>
+                        <p className="text-[10px] text-slate-400 italic mt-1 border-t border-slate-800/80 pt-1">
+                          "{faceResult.similarityReason}"
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="absolute top-3 left-3 px-2.5 py-1 rounded-xl bg-slate-950/80 border border-slate-700 text-white text-[10px] font-bold tracking-wide flex items-center gap-1.5 backdrop-blur-sm">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Selfie Terambil</span>
                     </div>
                   </div>
                 ) : (
@@ -610,10 +625,10 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
                         </p>
                         <button
                           type="button"
-                          onClick={handleSimulateSelfie}
-                          className="px-3.5 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-400 transition"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-3.5 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-400 transition cursor-pointer"
                         >
-                          Gunakan Foto Simulasi Pegawai
+                          Ambil Foto Lewat Kamera Ponsel
                         </button>
                       </div>
                     )}
@@ -621,6 +636,36 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
                 )}
               </div>
 
+              {/* Alert if face belongs to another registered employee */}
+              {faceResult && faceResult.employee && currentUser && faceResult.employee.id !== currentUser.id && (
+                <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={faceResult.employee.avatar}
+                      alt=""
+                      className="w-10 h-10 rounded-xl object-cover ring-2 ring-amber-400 shrink-0"
+                    />
+                    <div>
+                      <p className="text-xs font-black text-amber-300 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        <span>AI Mendeteksi Rekan: {faceResult.employee.name}</span>
+                      </p>
+                      <p className="text-[11px] text-slate-300">
+                        Apakah ini Anda? Klik untuk mencatat presensi atas nama Anda.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (faceResult.employee?.id) login(faceResult.employee.id);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:brightness-110 active:scale-95 text-slate-950 text-xs font-black shadow-md transition cursor-pointer self-start sm:self-auto shrink-0"
+                  >
+                    Gunakan Nama Saya (1-Klik)
+                  </button>
+                </div>
+              )}
               {/* Camera Controls */}
               <div className="flex items-center justify-center gap-3">
                 {photoBase64 ? (
@@ -628,6 +673,7 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
                     type="button"
                     onClick={() => {
                       setPhotoBase64(null);
+                      setFaceResult(null);
                       startCamera();
                     }}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition cursor-pointer"
@@ -649,11 +695,11 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
 
                     <button
                       type="button"
-                      onClick={handleSimulateSelfie}
-                      title="Gunakan simulasi jika webcam perangkat tidak tersedia"
-                      className="px-3 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-400 text-xs hover:text-white hover:bg-slate-700 transition"
+                      onClick={() => fileInputRef.current?.click()}
+                      title="Buka kamera perangkat langsung"
+                      className="px-3 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 text-xs hover:text-white hover:bg-slate-700 transition cursor-pointer"
                     >
-                      Simulasi Selfie
+                      Foto Kamera Alternatif
                     </button>
                   </>
                 )}

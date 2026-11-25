@@ -2,10 +2,12 @@ import React, { useEffect } from 'react';
 import { AttendanceProvider, useAttendance } from './context/AttendanceContext';
 import { Navbar } from './components/Navbar';
 import { OfflineBanner } from './components/OfflineBanner';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { EmployeeDashboard } from './components/employee/EmployeeDashboard';
 import { AdminPortal } from './components/admin/AdminPortal';
 import { AdminPinModal } from './components/common/AdminPinModal';
 import { RealLoginScreen } from './components/auth/RealLoginScreen';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const MainLayout: React.FC = () => {
   const {
@@ -55,6 +57,7 @@ const MainLayout: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-slate-100 flex flex-col">
       {/* Offline Connectivity Banner */}
       <OfflineBanner />
+      <OfflineIndicator />
 
       {/* Main Church Header & Navigation */}
       <Navbar />
@@ -68,22 +71,24 @@ const MainLayout: React.FC = () => {
       <AdminPinModal isOpen={showPinModal} onClose={closePinModal} />
 
       {/* Footer */}
-      <footer className="no-print bg-blue-950/80 py-6 text-center text-xs text-slate-200">
+      <footer className="no-print bg-blue-950/80 py-6 text-center text-xs text-slate-200 border-t border-slate-800/60">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="text-amber-400 font-bold">✝</span>
-            <span className="font-semibold text-slate-400">{settings.churchName}</span>
+            <span className="font-semibold text-slate-300">{settings.churchName}</span>
           </div>
-          <p className="text-[11px] text-slate-500">
-            Sistem Presensi Pegawai Berbasis GPS Geofencing, MediaDevices Selfie Camera & Progressive Web App (PWA).
+
+          <p className="text-[11px] text-slate-400">
+            Sistem Presensi Pegawai Berbasis GPS Geofencing, Kamera Selfie, AI Biometrik & PWA.
           </p>
+
           <div className="flex items-center gap-3 text-[11px]">
             <span className="text-emerald-400 flex items-center gap-1.5 font-bold">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               Sinkronisasi Real-Time Aktif
             </span>
-            <span className="text-slate-500">|</span>
-            <span className="text-slate-400 font-mono">v2.4.0</span>
+            <span className="text-slate-600">|</span>
+            <span className="text-slate-400 font-mono">v2.5.0 Production</span>
           </div>
         </div>
       </footer>
@@ -93,8 +98,10 @@ const MainLayout: React.FC = () => {
 
 export default function App() {
   return (
-    <AttendanceProvider>
-      <MainLayout />
-    </AttendanceProvider>
+    <ErrorBoundary>
+      <AttendanceProvider>
+        <MainLayout />
+      </AttendanceProvider>
+    </ErrorBoundary>
   );
 }

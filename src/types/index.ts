@@ -88,6 +88,9 @@ export interface AttendanceRecord {
   isVerified: boolean;
   verifiedBy?: string;
   notes?: string;
+  faceVerified?: boolean;
+  faceConfidence?: number;
+  faceMatchedName?: string;
 }
 
 export type LeaveType = 'SAKIT' | 'IZIN' | 'CUTI' | 'TUGAS_LUAR';
@@ -165,4 +168,18 @@ export interface AppSettings {
   timezone: TimezoneOption;
   timezoneLabel: TimezoneLabel;
   adminPin?: string; // Secure PIN for accessing Admin Portal
+}
+
+export interface FaceRecognitionResult {
+  matched: boolean;
+  confidence: number;
+  similarityReason: string;
+  employee?: {
+    id: string;
+    name: string;
+    nip: string;
+    department: string;
+    position: string;
+    avatar: string;
+  };
 }

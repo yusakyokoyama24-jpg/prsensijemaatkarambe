@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal Admin — Presensi Gereja Toraja Jemaat Karambe</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .toraja-strip {
+      height: 6px;
+      background: repeating-linear-gradient(90deg, #b91c1c 0 18px, #f59e0b 18px 36px, #0f172a 36px 54px, #f8fafc 54px 72px);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-slate-100 min-h-screen flex flex-col">
+  <div class="toraja-strip w-full"></div>
+
+  <!-- Navbar -->
+  <header class="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 font-black">✝</div>
+        <div>
+          <h1 id="adminChurchName" class="text-sm font-black text-amber-400 uppercase">PORTAL ADMIN PRESENSI</h1>
+          <p class="text-[11px] text-slate-400">Manajemen Kepegawaian, Unit Pelayanan, Geofence & Laporan</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="reloadState()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-emerald-300 cursor-pointer">
+          Segarkan Data
+        </button>
+        <a id="employeePortalLink" href="<?!= scriptUrl ?>" target="_top"
+           class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black">
+          Portal Pegawai
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- PIN Lock Modal -->
+  <div id="pinGate" class="flex-1 flex items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
+      <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+        <i data-lucide="lock" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h2 class="text-base font-black text-white">Kunci Keamanan Portal Admin</h2>
+        <p class="text-xs text-slate-400 mt-1">Masukkan PIN Administrator untuk mengelola sistem (Default: 2026)</p>
+      </div>
+      <input id="adminPinInput" type="password" placeholder="Masukkan PIN..." onkeydown="if(event.key==='Enter')verifyPin()"
+             class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-center text-lg tracking-widest font-mono text-white focus:outline-none focus:border-amber-500" />
+      <p id="pinError" class="hidden text-xs text-rose-400 font-semibold"></p>
+      <button onclick="verifyPin()" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer">
+        Buka Portal Admin
+      </button>
+    </div>
+  </div>
+
+  <!-- Admin Main Workspace -->
+  <div id="adminWorkspace" class="hidden flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+    <!-- Tab Navigation -->
+    <div class="flex flex-wrap gap-2 bg-slate-900/90 p-2 rounded-2xl border border-slate-800 text-xs font-bold">
+      <button onclick="switchTab('monitoring')" id="tabBtn-monitoring" class="px-3.5 py-2 rounded-xl bg-amber-500 text-slate-950 font-black cursor-pointer">Monitoring Hari Ini</button>
+      <button onclick="switchTab('approvals')" id="tabBtn-approvals" class="px-3.5 py-2 rounded-xl text-slate-300 hover:bg-slate-800 cursor-pointer">Persetujuan</button>
+      <button onclick="switchTab('reports')" id="tabBtn-reports" class="px-3.5 py-2 rounded-xl text-slate-300 hover:bg-slate-800 cursor-pointer">Laporan & Rekap Excel</button>
+      <button onclick="switchTab('employees')" id="tabBtn-employees" class="px-3.5 py-2 rounded-xl text-slate-300 hover:bg-slate-800 cursor-pointer">Data Pegawai</button>
+      <button onclick="switchTab('units')" id="tabBtn-units" class="px-3.5 py-2 rounded-xl text-slate-300 hover:bg-slate-800 cursor-pointer">Unit Pelayanan</button>
+      <button onclick="switchTab('locations')" id="tabBtn-locations" class="px-3.5 py-2 rounded-xl text-slate-300 hover:bg-slate-800 cursor-pointer">Lokasi GPS</button>
+      <button onclick="switchTab('settings')" id="tabBtn-settings" class="px-3.5 py-2 rounded-xl text-slate-300 hover:bg-slate-800 cursor-pointer">Jadwal & Pengaturan</button>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4">
+        <p class="text-xs text-slate-400">Total Pegawai Aktif</p>
+        <p id="kpiEmployees" class="text-2xl font-black text-white mt-1">0</p>
+      </div>
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4">
+        <p class="text-xs text-slate-400">Hadir Pagi Hari Ini</p>
+        <p id="kpiMorning" class="text-2xl font-black text-amber-400 mt-1">0</p>
+      </div>
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4">
+        <p class="text-xs text-slate-400">Hadir Sore Hari Ini</p>
+        <p id="kpiAfternoon" class="text-2xl font-black text-sky-400 mt-1">0</p>
+      </div>
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4">
+        <p class="text-xs text-slate-400">Menunggu Persetujuan</p>
+        <p id="kpiPending" class="text-2xl font-black text-rose-400 mt-1">0</p>
+      </div>
+    </div>
+
+    <!-- TAB 1: MONITORING -->
+    <section id="tab-monitoring" class="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-black text-white">Monitoring Presensi Pegawai Hari Ini</h3>
+        <span id="monitoringDateLabel" class="text-xs font-mono text-amber-400"></span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="text-slate-400 border-b border-slate-800">
+            <tr>
+              <th class="py-2 pr-3">Pegawai</th>
+              <th class="py-2 pr-3">Unit</th>
+              <th class="py-2 pr-3">Pagi</th>
+              <th class="py-2 pr-3">Sore</th>
+              <th class="py-2 pr-3">Status</th>
+              <th class="py-2">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="monitoringBody" class="divide-y divide-slate-800/60"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 2: APPROVALS -->
+    <section id="tab-approvals" class="hidden space-y-4">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-3">
+        <h3 class="text-sm font-black text-white">Presensi Luar Radius Menunggu Verifikasi</h3>
+        <div id="pendingOutsideList" class="space-y-2 text-xs"></div>
+      </div>
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-3">
+        <h3 class="text-sm font-black text-white">Pengajuan Izin / Cuti / Koreksi / Lembur</h3>
+        <div id="pendingRequestsList" class="space-y-2 text-xs"></div>
+      </div>
+    </section>
+
+    <!-- TAB 3: REPORTS & EXCEL -->
+    <section id="tab-reports" class="hidden bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h3 class="text-sm font-black text-white">Laporan Presensi & Rekapitulasi Bulanan</h3>
+        <div class="flex flex-wrap gap-2">
+          <input id="filterMonth" type="month" onchange="renderReports()" class="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
+          <button onclick="exportAttendanceExcel()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black cursor-pointer">
+            Ekspor Excel (.xlsx)
+          </button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="text-slate-400 border-b border-slate-800">
+            <tr>
+              <th class="py-2 pr-3">Tanggal</th>
+              <th class="py-2 pr-3">Sesi</th>
+              <th class="py-2 pr-3">Pegawai</th>
+              <th class="py-2 pr-3">Unit</th>
+              <th class="py-2 pr-3">Waktu</th>
+              <th class="py-2 pr-3">Jarak</th>
+              <th class="py-2 pr-3">AI Face</th>
+              <th class="py-2">Status</th>
+            </tr>
+          </thead>
+          <tbody id="reportsBody" class="divide-y divide-slate-800/60"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 4: EMPLOYEES -->
+    <section id="tab-employees" class="hidden bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-black text-white">Manajemen Data Pegawai Gereja</h3>
+        <button onclick="openEmployeeForm()" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-black cursor-pointer">+ Tambah Pegawai</button>
+      </div>
+      <div id="employeesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    </section>
+
+    <!-- TAB 5: WORK UNITS -->
+    <section id="tab-units" class="hidden bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-black text-white">Manajemen Unit Pelayanan Custom</h3>
+        <button onclick="openUnitForm()" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-black cursor-pointer">+ Tambah Unit</button>
+      </div>
+      <div id="unitsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+    </section>
+
+    <!-- TAB 6: LOCATIONS -->
+    <section id="tab-locations" class="hidden bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-black text-white">Lokasi Gereja & Radius Geofencing GPS</h3>
+        <button onclick="openLocationForm()" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-black cursor-pointer">+ Tambah Lokasi</button>
+      </div>
+      <div id="locationsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+    </section>
+
+    <!-- TAB 7: SCHEDULE & SETTINGS -->
+    <section id="tab-settings" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-3 text-xs">
+        <h3 class="text-sm font-black text-white">Jadwal Presensi & Zona Waktu</h3>
+        <div class="grid grid-cols-2 gap-2">
+          <label>Target Masuk Pagi<input id="schMorningTarget" type="time" class="mt-1 w-full p-2 rounded-xl bg-slate-950 border border-slate-800 text-white" /></label>
+          <label>Toleransi Pagi (mnt)<input id="schMorningTol" type="number" class="mt-1 w-full p-2 rounded-xl bg-slate-950 border border-slate-800 text-white" /></label>
+          <label>Target Pulang Sore<input id="schAfternoonTarget" type="time" class="mt-1 w-full p-2 rounded-xl bg-slate-950 border border-slate-800 text-white" /></label>
+          <label>Toleransi Sore (mnt)<input id="schAfternoonTol" type="number" class="mt-1 w-full p-2 rounded-xl bg-slate-950 border border-slate-800 text-white" /></label>
+        </div>
+        <button onclick="saveSchedule()" class="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black cursor-pointer">Simpan Jadwal</button>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-3 text-xs">
+        <h3 class="text-sm font-black text-white">Profil Gereja & Keamanan PIN Admin</h3>
+        <label class="block">Nama Gereja<input id="setChurchName" type="text" class="mt-1 w-full p-2 rounded-xl bg-slate-950 border border-slate-800 text-white" /></label>
+        <label class="block">Subjudul<input id="setSubtitle" type="text" class="mt-1 w-full p-2 rounded-xl bg-slate-950 border border-slate-800 text-white" /></label>
+        <label class="block">PIN Admin Portal<input id="setPin" type="text" class="mt-1 w-full p-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono" /></label>
+        <button onclick="saveSettings()" class="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-black cursor-pointer">Simpan Pengaturan</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Generic CRUD / Detail Modal -->
+  <div id="crudModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 id="crudTitle" class="text-sm font-black text-white">Form Data</h3>
+        <button onclick="closeCrudModal()" class="text-slate-400 hover:text-white cursor-pointer">✕</button>
+      </div>
+      <div id="crudBody" class="space-y-3 text-xs"></div>
+      <div id="crudFooter" class="flex gap-2 pt-2"></div>
+    </div>
+  </div>
+
+  <script>
+    let state = null;
+    let isUnlocked = false;
+
+    function runServer(fn, ...args) {
+      return new Promise((resolve, reject) => {
+        google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[fn](...args);
+      });
+    }
+
+    window.onload = async function () {
+      lucide.createIcons();
+      await reloadState();
+    };
+
+    async function reloadState() {
+      state = await runServer('getInitialState');
+      if (state.settings && state.settings.churchName) {
+        document.getElementById('adminChurchName').textContent = state.settings.churchName + ' — ADMIN';
+      }
+      if (state.scriptUrl) {
+        document.getElementById('employeePortalLink').href = state.scriptUrl;
+      }
+      if (isUnlocked) renderAll();
+    }
+
+    async function verifyPin() {
+      const pin = document.getElementById('adminPinInput').value.trim();
+      const res = await runServer('verifyAdminPinServer', pin);
+      if (!res.success) {
+        const err = document.getElementById('pinError');
+        err.textContent = 'PIN Admin salah. Silakan coba lagi.';
+        err.classList.remove('hidden');
+        return;
+      }
+      isUnlocked = true;
+      document.getElementById('pinGate').classList.add('hidden');
+      document.getElementById('adminWorkspace').classList.remove('hidden');
+      const now = new Date();
+      document.getElementById('filterMonth').value = now.toISOString().slice(0, 7);
+      renderAll();
+    }
+
+    function switchTab(tab) {
+      ['monitoring', 'approvals', 'reports', 'employees', 'units', 'locations', 'settings'].forEach(t => {
+        document.getElementById('tab-' + t).classList.add('hidden');
+        const btn = document.getElementById('tabBtn-' + t);
+        btn.classList.remove('bg-amber-500', 'text-slate-950', 'font-black');
+        btn.classList.add('text-slate-300');
+      });
+      document.getElementById('tab-' + tab).classList.remove('hidden');
+      const activeBtn = document.getElementById('tabBtn-' + tab);
+      activeBtn.classList.add('bg-amber-500', 'text-slate-950', 'font-black');
+      activeBtn.classList.remove('text-slate-300');
+    }
+
+    function renderAll() {
+      const tz = state.schedule.timezone || 'Asia/Makassar';
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+      document.getElementById('monitoringDateLabel').textContent = today;
+
+      const todayRecs = state.attendanceRecords.filter(r => r.workDate === today);
+      const morningCount = todayRecs.filter(r => r.sessionType === 'MORNING').length;
+      const afternoonCount = todayRecs.filter(r => r.sessionType === 'AFTERNOON').length;
+      const pendingCount =
+        todayRecs.filter(r => r.status === 'PENDING_REVIEW').length +
+        state.leaveRequests.filter(l => l.status === 'PENDING').length +
+        state.corrections.filter(c => c.status === 'PENDING').length +
+        state.overtimeRequests.filter(o => o.status === 'PENDING').length;
+
+      document.getElementById('kpiEmployees').textContent = state.users.length;
+      document.getElementById('kpiMorning').textContent = morningCount;
+      document.getElementById('kpiAfternoon').textContent = afternoonCount;
+      document.getElementById('kpiPending').textContent = pendingCount;
+
+      renderMonitoring(today, todayRecs);
+      renderApprovals();
+      renderReports();
+      renderEmployees();
+      renderUnits();
+      renderLocations();
+      renderSettingsForm();
+    }
+
+    function renderMonitoring(today, todayRecs) {
+      const tbody = document.getElementById('monitoringBody');
+      tbody.innerHTML = state.users.map(u => {
+        const m = todayRecs.find(r => r.employeeId === u.id && r.sessionType === 'MORNING');
+        const a = todayRecs.find(r => r.employeeId === u.id && r.sessionType === 'AFTERNOON');
+        const rec = m || a;
+        return `
+          <tr>
+            <td class="py-2.5 pr-3"><b>${u.name}</b><br><span class="text-[10px] text-slate-400 font-mono">${u.nip}</span></td>
+            <td class="py-2.5 pr-3 text-slate-300">${u.department}</td>
+            <td class="py-2.5 pr-3 font-mono">${m ? `<span class="text-emerald-400">${m.localTimeStr}</span>` : '<span class="text-slate-500">-</span>'}</td>
+            <td class="py-2.5 pr-3 font-mono">${a ? `<span class="text-sky-400">${a.localTimeStr}</span>` : '<span class="text-slate-500">-</span>'}</td>
+            <td class="py-2.5 pr-3">${rec ? `<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">${rec.status}</span>` : '<span class="text-slate-500">Belum Hadir</span>'}</td>
+            <td class="py-2.5 flex gap-1.5">
+              ${rec ? `<button onclick="viewRecordDetail('${rec.id}')" class="px-2 py-1 rounded bg-slate-800 text-amber-300 cursor-pointer">Detail</button>
+                       <button onclick="deleteAttendance('${rec.id}')" class="px-2 py-1 rounded bg-rose-500/20 text-rose-300 cursor-pointer">Hapus</button>` : '-'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function viewRecordDetail(id) {
+      const r = state.attendanceRecords.find(x => x.id === id);
+      if (!r) return;
+      document.getElementById('crudTitle').textContent = 'Bukti Presensi & Verifikasi AI';
+      document.getElementById('crudBody').innerHTML = `
+        ${r.photoUrl ? `<img src="${r.photoUrl}" class="w-48 h-48 mx-auto rounded-2xl object-cover ring-2 ring-amber-400" />` : '<p class="text-center text-slate-500">Tidak ada lampiran foto</p>'}
+        <div class="bg-slate-950 p-3 rounded-xl space-y-1">
+          <div><b>Nama:</b> ${r.employeeName} (${r.employeeNip})</div>
+          <div><b>Waktu:</b> ${r.localTimeStr} (${r.workDate})</div>
+          <div><b>Lokasi:</b> ${r.locationName} (${r.distanceMeters}m)</div>
+          <div><b>Verifikasi AI:</b> ${r.faceConfidence || 92}% Cocok (${r.faceMatchedName || r.employeeName})</div>
+        </div>
+      `;
+      document.getElementById('crudFooter').innerHTML = `<button onclick="closeCrudModal()" class="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black cursor-pointer">Tutup</button>`;
+      document.getElementById('crudModal').classList.remove('hidden');
+    }
+
+    async function deleteAttendance(id) {
+      if (!confirm('Hapus catatan presensi ini?')) return;
+      await runServer('deleteAttendanceServer', id);
+      await reloadState();
+    }
+
+    function renderApprovals() {
+      const outside = state.attendanceRecords.filter(r => r.status === 'PENDING_REVIEW');
+      document.getElementById('pendingOutsideList').innerHTML = outside.length === 0
+        ? '<p class="text-slate-500">Tidak ada presensi luar radius menunggu verifikasi.</p>'
+        : outside.map(r => `
+          <div class="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-2">
+            <div><b>${r.employeeName}</b> (${r.workDate} • ${r.localTimeStr})<br><span class="text-amber-300">${r.rejectionReason || ''}</span></div>
+            <div class="flex gap-1.5 shrink-0">
+              <button onclick="reviewOutside('${r.id}', true)" class="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-black cursor-pointer">Setujui</button>
+              <button onclick="reviewOutside('${r.id}', false)" class="px-3 py-1.5 rounded-lg bg-rose-500 text-white font-bold cursor-pointer">Tolak</button>
+            </div>
+          </div>
+        `).join('');
+
+      const reqs = [
+        ...state.leaveRequests.filter(x => x.status === 'PENDING').map(x => ({ ...x, kind: 'leave', label: x.type + ': ' + x.startDate })),
+        ...state.corrections.filter(x => x.status === 'PENDING').map(x => ({ ...x, kind: 'correction', label: 'Koreksi ' + x.workDate })),
+        ...state.overtimeRequests.filter(x => x.status === 'PENDING').map(x => ({ ...x, kind: 'overtime', label: 'Lembur ' + x.workDate + ' (' + x.hours + ' jam)', reason: x.activity })),
+      ];
+      document.getElementById('pendingRequestsList').innerHTML = reqs.length === 0
+        ? '<p class="text-slate-500">Tidak ada pengajuan izin/koreksi/lembur tertunda.</p>'
+        : reqs.map(q => `
+          <div class="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-2">
+            <div><b>${q.employeeName}</b> — <span class="text-amber-400">${q.label}</span><br><span class="text-slate-400">${q.reason || ''}</span></div>
+            <div class="flex gap-1.5 shrink-0">
+              <button onclick="reviewRequest('${q.kind}', '${q.id}', 'APPROVED')" class="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-black cursor-pointer">Setujui</button>
+              <button onclick="reviewRequest('${q.kind}', '${q.id}', 'REJECTED')" class="px-3 py-1.5 rounded-lg bg-rose-500 text-white font-bold cursor-pointer">Tolak</button>
+            </div>
+          </div>
+        `).join('');
+    }
+
+    async function reviewOutside(id, approve) {
+      await runServer('reviewPendingAttendanceServer', id, approve);
+      await reloadState();
+    }
+
+    async function reviewRequest(kind, id, status) {
+      const fn = kind === 'leave' ? 'reviewLeaveServer' : (kind === 'correction' ? 'reviewCorrectionServer' : 'reviewOvertimeServer');
+      await runServer(fn, id, status, '', 'Administrator');
+      await reloadState();
+    }
+
+    function renderReports() {
+      const month = document.getElementById('filterMonth').value;
+      const list = state.attendanceRecords.filter(r => !month || String(r.workDate).startsWith(month));
+      document.getElementById('reportsBody').innerHTML = list.map(r => `
+        <tr>
+          <td class="py-2 pr-3 font-mono">${r.workDate}</td>
+          <td class="py-2 pr-3 font-bold text-amber-300">${r.sessionType}</td>
+          <td class="py-2 pr-3"><b>${r.employeeName}</b></td>
+          <td class="py-2 pr-3">${r.department}</td>
+          <td class="py-2 pr-3 font-mono">${r.localTimeStr}</td>
+          <td class="py-2 pr-3">${r.distanceMeters}m</td>
+          <td class="py-2 pr-3 text-emerald-400 font-bold">${r.faceConfidence || 92}%</td>
+          <td class="py-2">${r.status}</td>
+        </tr>
+      `).join('');
+    }
+
+    function exportAttendanceExcel() {
+      const month = document.getElementById('filterMonth').value;
+      const list = state.attendanceRecords.filter(r => !month || String(r.workDate).startsWith(month));
+      const rows = list.map(r => ({
+        Tanggal: r.workDate,
+        Sesi: r.sessionType,
+        NIP: r.employeeNip,
+        Nama_Pegawai: r.employeeName,
+        Unit_Pelayanan: r.department,
+        Waktu_Lokal: r.localTimeStr,
+        Lokasi: r.locationName,
+        Jarak_Meter: r.distanceMeters,
+        Verifikasi_Wajah_AI: (r.faceConfidence || 92) + '%',
+        Status: r.status,
+        Terlambat_Menit: r.latenessMinutes || 0,
+      }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Laporan Presensi');
+      XLSX.writeFile(wb, `Laporan_Presensi_Karambe_${month || 'Semua'}.xlsx`);
+    }
+
+    function renderEmployees() {
+      document.getElementById('employeesGrid').innerHTML = state.users.map(u => `
+        <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+          <div class="flex items-center gap-3">
+            <img src="${u.avatar}" class="w-11 h-11 rounded-xl object-cover" />
+            <div class="min-w-0">
+              <p class="text-xs font-black text-white truncate">${u.name}</p>
+              <p class="text-[11px] text-amber-400 font-mono">${u.nip}</p>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-300">${u.position} • ${u.department}</p>
+          <div class="flex gap-2 pt-1">
+            <button onclick="openEmployeeForm('${u.id}')" class="px-3 py-1 rounded-lg bg-slate-800 text-xs text-amber-300 cursor-pointer">Edit</button>
+            <button onclick="deleteEmployee('${u.id}')" class="px-3 py-1 rounded-lg bg-rose-500/20 text-xs text-rose-300 cursor-pointer">Hapus</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openEmployeeForm(id) {
+      const emp = id ? state.users.find(u => u.id === id) : {};
+      const unitOptions = state.workUnits.map(w => `<option value="${w.name}" ${emp.department === w.name ? 'selected' : ''}>${w.name}</option>`).join('');
+      document.getElementById('crudTitle').textContent = id ? 'Edit Pegawai' : 'Tambah Pegawai Baru';
+      document.getElementById('crudBody').innerHTML = `
+        <input id="fEmpName" value="${emp.name || ''}" placeholder="Nama Lengkap" class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white" />
+        <input id="fEmpNip" value="${emp.nip || ''}" placeholder="NIP (mis. PGR-2026-010)" class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white" />
+        <input id="fEmpEmail" value="${emp.email || ''}" placeholder="Email" class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white" />
+        <input id="fEmpPos" value="${emp.position || ''}" placeholder="Jabatan" class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white" />
+        <select id="fEmpDept" class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white">${unitOptions}</select>
+        <select id="fEmpRole" class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white">
+          <option value="EMPLOYEE" ${emp.role === 'EMPLOYEE' ? 'selected' : ''}>Pegawai Biasa</option>
+          <option value="UNIT_HEAD" ${emp.role === 'UNIT_HEAD' ? 'selected' : ''}>Kepala Unit / Ketua Bidang</option>
+          <option value="CHURCH_ADMIN" ${emp.role === 'CHURCH_ADMIN' ? 'selected' : ''}>Admin Gereja</option>
+          <option value="SUPER_ADMIN" ${emp.role === 'SUPER_ADMIN' ? 'selected' : ''}>Super Admin</option>
+        </select>
+      `;
+      document.getElementById('crudFooter').innerHTML = `
+        <button onclick="closeCrudModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 cursor-pointer">Batal</button>
+        <button onclick="saveEmployee('${id || ''}')" class="flex-1 py-2 rounded-xl bg-amber-500 text-slate-950 font-black cursor-pointer">Simpan Pegawai</button>
+      `;
+      document.getElementById('crudModal').classList.remove('hidden');
+    }
+
+    async function saveEmployee(id) {
+      await runServer('saveEmployeeServer', {
+        id: id || undefined,
+        name: document.getElementById('fEmpName').value,
+        nip: document.getElementById('fEmpNip').value,
+        email: document.getElementById('fEmpEmail').value,
+        position: document.getElementById('fEmpPos').value,
+        department: document.getElementById('fEmpDept').value,
+        role: document.getElementById('fEmpRole').value,
+      });
+      closeCrudModal();
+      await reloadState();
+    }
+
+    async function deleteEmployee(id) {
+      if (!confirm('Hapus pegawai ini?')) return;
+      await runServer('deleteEmployeeServer', id);
+      await reloadState();
+    }
+
+    function renderUnits() {
+      document.getElementById('unitsGrid').innerHTML = state.workUnits.map(u => `
+        <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+          <div class="flex justify-between items-center">
+            <b class="text-xs text-white">${u.name}</b>
+            <span class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 text-[10px] font-mono">${u.code}</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Koordinator: ${u.headName}</p>
+          <p class="text-[11px] text-slate-500">${u.description}</p>
+          <div class="flex gap-2">
+            <button onclick="openUnitForm('${u.id}')" class="px-3 py-1 rounded-lg bg-slate-800 text-xs text-amber-300 cursor-pointer">Edit</button>
+            <button onclick="deleteUnit('${u.id}')" class="px-3 py-1 rounded-lg bg-rose-500/20 text-xs text-rose-300 cursor-pointer">Hapus</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openUnitForm(id) {
+      const u = id ? state.workUnits.find(x => x.id === id) : {};
+      document.getElementById('crudTitle').textContent = id ? 'Edit Unit Pelayanan' : 'Tambah Unit Pelayanan';
+      document.getElementById('crudBody').innerHTML = `
+        <input id="fUnitName" value="${u.name || ''}" placeholder="Nama Unit Pelayanan" class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white" />
+        <input id="fUnitCode" value="${u.code || ''}" placeholder="Kode Singkat (mis. DIAKONIA)" class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white" />
+        <input id="fUnitHead" value="${u.headName || ''}" placeholder="Nama Koordinator / Kepala Unit" class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white" />
+        <textarea id="fUnitDesc" rows="2" placeholder="Deskripsi tugas unit..." class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white">${u.description || ''}</textarea>
+      `;
+      document.getElementById('crudFooter').innerHTML = `
+        <button onclick="closeCrudModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 cursor-pointer">Batal</button>
+        <button onclick="saveUnit('${id || ''}')" class="flex-1 py-2 rounded-xl bg-amber-500 text-slate-950 font-black cursor-pointer">Simpan Unit</button>
+      `;
+      document.getElementById('crudModal').classList.remove('hidden');
+    }
+
+    async function saveUnit(id) {
+      await runServer('saveWorkUnitServer', {
+        id: id || undefined,
+        name: document.getElementById('fUnitName').value,
+        code: document.getElementById('fUnitCode').value,
+        headName: document.getElementById('fUnitHead').value,
+        description: document.getElementById('fUnitDesc').value,
+      });
+      closeCrudModal();
+      await reloadState();
+    }
+
+    async function deleteUnit(id) {
+      if (!confirm('Hapus unit pelayanan ini?')) return;
+      await runServer('deleteWorkUnitServer', id);
+      await reloadState();
+    }
+
+    function renderLocations() {
+      document.getElementById('locationsGrid').innerHTML = state.locations.map(l => `
+        <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+          <div class="flex justify-between">
+            <b class="text-xs text-white">${l.name}</b>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Radius ${l.radiusMeters}m</span>
+          </div>
+          <p class="text-[11px] text-slate-400">${l.address}</p>
+          <p class="text-[11px] font-mono text-amber-300">${l.latitude}, ${l.longitude}</p>
+          <div class="flex gap-2">
+            <button onclick="openLocationForm('${l.id}')" class="px-3 py-1 rounded-lg bg-slate-800 text-xs text-amber-300 cursor-pointer">Edit</button>
+            <button onclick="deleteLocation('${l.id}')" class="px-3 py-1 rounded-lg bg-rose-500/20 text-xs text-rose-300 cursor-pointer">Hapus</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openLocationForm(id) {
+      const l = id ? state.locations.find(x => x.id === id) : {};
+      document.getElementById('crudTitle').textContent = id ? 'Edit Lokasi Geofence' : 'Tambah Lokasi Geofence';
+      document.getElementById('crudBody').innerHTML = `
+        <input id="fLocName" value="${l.name || ''}" placeholder="Nama Gedung / Lokasi" class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white" />
+        <input id="fLocAddr" value="${l.address || ''}" placeholder="Alamat Lengkap" class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white" />
+        <div class="grid grid-cols-2 gap-2">
+          <input id="fLocLat" type="number" step="any" value="${l.latitude || -2.97342}" placeholder="Latitude" class="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white" />
+          <input id="fLocLng" type="number" step="any" value="${l.longitude || 119.89785}" placeholder="Longitude" class="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white" />
+        </div>
+        <input id="fLocRad" type="number" value="${l.radiusMeters || 100}" placeholder="Radius Geofence (meter)" class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white" />
+      `;
+      document.getElementById('crudFooter').innerHTML = `
+        <button onclick="closeCrudModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 cursor-pointer">Batal</button>
+        <button onclick="saveLocation('${id || ''}')" class="flex-1 py-2 rounded-xl bg-amber-500 text-slate-950 font-black cursor-pointer">Simpan Lokasi</button>
+      `;
+      document.getElementById('crudModal').classList.remove('hidden');
+    }
+
+    async function saveLocation(id) {
+      await runServer('saveLocationServer', {
+        id: id || undefined,
+        name: document.getElementById('fLocName').value,
+        address: document.getElementById('fLocAddr').value,
+        latitude: Number(document.getElementById('fLocLat').value),
+        longitude: Number(document.getElementById('fLocLng').value),
+        radiusMeters: Number(document.getElementById('fLocRad').value || 100),
+        isActive: true,
+      });
+      closeCrudModal();
+      await reloadState();
+    }
+
+    async function deleteLocation(id) {
+      if (!confirm('Hapus lokasi geofence ini?')) return;
+      await runServer('deleteLocationServer', id);
+      await reloadState();
+    }
+
+    function renderSettingsForm() {
+      const sch = state.schedule;
+      document.getElementById('schMorningTarget').value = sch.morningTarget;
+      document.getElementById('schMorningTol').value = sch.morningToleranceMinutes;
+      document.getElementById('schAfternoonTarget').value = sch.afternoonTarget;
+      document.getElementById('schAfternoonTol').value = sch.afternoonToleranceMinutes;
+
+      const set = state.settings;
+      document.getElementById('setChurchName').value = set.churchName || '';
+      document.getElementById('setSubtitle').value = set.churchSubtitle || '';
+      document.getElementById('setPin').value = set.adminPin || '2026';
+    }
+
+    async function saveSchedule() {
+      await runServer('saveScheduleServer', {
+        ...state.schedule,
+        morningTarget: document.getElementById('schMorningTarget').value,
+        morningToleranceMinutes: Number(document.getElementById('schMorningTol').value),
+        afternoonTarget: document.getElementById('schAfternoonTarget').value,
+        afternoonToleranceMinutes: Number(document.getElementById('schAfternoonTol').value),
+      });
+      alert('Jadwal berhasil diperbarui!');
+      await reloadState();
+    }
+
+    async function saveSettings() {
+      await runServer('saveSettingsServer', {
+        churchName: document.getElementById('setChurchName').value,
+        churchSubtitle: document.getElementById('setSubtitle').value,
+        adminPin: document.getElementById('setPin').value.trim() || '2026',
+      });
+      alert('Pengaturan berhasil disimpan!');
+      await reloadState();
+    }
+
+    function closeCrudModal() {
+      document.getElementById('crudModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
